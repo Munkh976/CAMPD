@@ -9,7 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# big db
-
-data/rmp.db
-
+# npm
+node_modules/
+package-lock.json
