@@ -119,3 +119,4 @@ def jsonl_to_csv_for_google_sheets(jsonl_path, csv_path):
 
 
 jsonl_to_csv_for_google_sheets("data/campd.jsonl", "data/campd_for_sheets.csv")
+jsonl_to_csv_for_datasette("data/campd.jsonl", "data/campd_for_datasette.csv")
