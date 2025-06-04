@@ -24,7 +24,7 @@ def filename_to_description_and_tag(filename):
     return description, tag, year, unit
 
 
-def jsonl_to_csv(jsonl_path, csv_path):
+def jsonl_to_csv_for_datasette(jsonl_path, csv_path):
     with open(jsonl_path, "r") as jsonl_file, open(csv_path, "w") as csv_file:
         fieldnames = [
             "title",
@@ -65,9 +65,57 @@ def jsonl_to_csv(jsonl_path, csv_path):
                         "file_size": file_size,
                         "file_checksum": file_checksum,
                         "file_link": file_link,
-                        "datasette_link": f"[Datasette](https://lite.datasette.io/?csv={file_link})",
+                        # only create a link if the unit is 'daily'
+                        # otherwise, the link will be too large for Datasette
+                        "datasette_link": f"[Datasette](https://lite.datasette.io/?csv={file_link})"
+                        if unit == "daily"
+                        else "N/A",
                     }
                 )
 
 
-jsonl_to_csv("data/campd.jsonl", "data/campd.csv")
+def jsonl_to_csv_for_google_sheets(jsonl_path, csv_path):
+    with open(jsonl_path, "r") as jsonl_file, open(csv_path, "w") as csv_file:
+        fieldnames = [
+            "title",
+            "id",
+            "file_description",
+            "unit",
+            "year",
+            "tag",
+            "file_key",
+            "file_size",
+            "file_checksum",
+            "file_link",
+        ]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for line in jsonl_file:
+            record = json.loads(line)
+            title = record["title"]
+            record_id = record["id"]
+            for file in record["files"]:
+                file_key = file["key"]
+                file_description, tag, year, unit = filename_to_description_and_tag(
+                    file_key
+                )
+                file_size = file["size"]
+                file_checksum = file["checksum"]
+                file_link = file["links"]["self"]
+                writer.writerow(
+                    {
+                        "title": title,
+                        "id": record_id,
+                        "file_description": file_description,
+                        "unit": unit,
+                        "year": year,
+                        "tag": tag,
+                        "file_key": file_key,
+                        "file_size": file_size,
+                        "file_checksum": file_checksum,
+                        "file_link": file_link,
+                    }
+                )
+
+
+jsonl_to_csv_for_google_sheets("data/campd.jsonl", "data/campd_for_sheets.csv")
