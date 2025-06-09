@@ -18,9 +18,5 @@
     "datasette-render-markdown": {
       "columns": ["id", "file_key", "datasette_link"]
     },
-    "datasette-homepage-table": {
-      "database": "CAMPD",
-      "table": "emissions"
-    }
   }
 }
