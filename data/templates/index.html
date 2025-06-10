@@ -52,8 +52,8 @@
     }
     .map-image {
       width: 100%;
-      height: auto; /* Maintain aspect ratio */
-      display: block;
+      height: 100%;
+      object-fit: cover;
     }
     th, td {
       padding: 0.75rem;
@@ -116,9 +116,9 @@
           Our code is open source. The archived data and code can be found at 
           <a href="https://github.com/willf/datasette-campd" class="text-accent hover:text-primary">EDGI GitHub</a>. 
           Explore the data interactively at 
-          <a href="https://lite.datasette.io/" class="text-accent hover:text-primary">Datasette</a> or access the original data at 
+          <a href="https://datasette.io/" class="text-accent hover:text-primary">Datasette</a> or access the original data at 
           <a href="{{ metadata.source_url | default('https://campd.epa.gov/') }}" class="text-accent hover:text-primary">{{ metadata.source | default("EPA CAMPD") }}</a> and 
-          <a href="https://zenodo.org/records/15047617" class="text-accent hover:text-primary">Zenodo</a>.
+          <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="text-accent hover:text-primary">Zenodo</a>.
         </p>
         <p class="text-text">
           Contact us at <a href="mailto:campd-support@camdsupport.com" class="text-accent hover:text-primary">contact@envirodatagov.org</a> 
