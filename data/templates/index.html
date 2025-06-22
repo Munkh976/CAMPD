@@ -37,7 +37,7 @@
   <main class="flex-grow pt-20 pb-6">
 
     <!-- Header Image Section -->
-    <section class="mt-2">
+    <section class="mt-4">
       <div class="map-container relative">
         <img src="/static/header.jpg" alt="CAMPD Header by J. Alex Lang" class="map-image" />
         <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
@@ -49,23 +49,23 @@
     </section>
 
     <!-- Info Section -->
-    <section class="container mx-auto px-2 mt-2">
+    <section class="container mx-auto px-4 mt-4">
       <div class="bg-card rounded-card p-6 border border-border">
-        <h2 class="text-2xl font-semibold text-primary mb-2">About {{ metadata.title | default("EPA CAMPD") }}</h2>
-        <p class="text-text mb-2">
+        <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default("EPA CAMPD") }}</h2>
+        <p class="text-text mb-4">
           {{ metadata.description | default("The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule.") }}
         </p>
-        <p class="text-text mb-2">
+        <p class="text-text mb-4">
           This project, maintained by EDGI, serves as a virtual backup of CAMPD data, hosted on Zenodo and powered by Datasette. 
           It includes hourly and daily emissions data, accessible for download or interactive exploration. 
-          The dataset is licensed under the <a href="{{ metadata.license_url | default('https://opendatacommons.org/licenses/odbl/') }}" class="text-accent hover:text-primary">{{ metadata.license | default("ODbL") }}</a>.
+          The dataset is licensed under the <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">ODbL</a>.
         </p>
-        <p class="text-text mb-2">
+        <p class="text-text mb-4">
           Our code is open source. The archived data and code can be found at 
           <a href="https://github.com/willf/datasette-campd" class="text-accent hover:text-primary">EDGI GitHub</a>. 
           Explore the data interactively at 
           <a href="https://datasette.io/" class="text-accent hover:text-primary">Datasette</a> or access the original data at 
-          <a href="{{ metadata.source_url | default('https://campd.epa.gov/') }}" class="text-accent hover:text-primary">{{ metadata.source | default("EPA CAMPD") }}</a> and 
+          <a href="https://campd.epa.gov/" class="text-accent hover:text-primary">EPA Clean Air Markets Program Data (CAMPD)</a> and 
           <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="text-accent hover:text-primary">Zenodo</a>.
         </p>
         <p class="text-text">
