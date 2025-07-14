@@ -30,7 +30,11 @@ async def login_page(datasette, request):
             if user and bcrypt.checkpw(password.encode('utf-8'), user["password_hash"].encode('utf-8')):
                 logger.debug("Login successful for user: %s", username)
                 response = Response.redirect("/admin")
-                response.set_cookie("ds_actor", json.dumps({"id": username, "name": f"User {username}"}), httponly=True)
+                actor_data = {"id": username, "name": f"User {username}"}
+                # Set ds_actor cookie without extra quotes
+                response.set_cookie("ds_actor", json.dumps(actor_data, ensure_ascii=False), httponly=True)
+                # Update request scope to include actor
+                request.scope["actor"] = actor_data
                 return response
             else:
                 logger.warning("Login failed for user: %s", username)
@@ -94,7 +98,9 @@ async def register_page(datasette, request):
             )
             logger.debug("User registered: %s", username)
             response = Response.redirect("/login")
-            response.set_cookie("ds_actor", json.dumps({"id": username, "name": f"User {username}"}), httponly=True)
+            actor_data = {"id": username, "name": f"User {username}"}
+            response.set_cookie("ds_actor", json.dumps(actor_data, ensure_ascii=False), httponly=True)
+            request.scope["actor"] = actor_data
             return response
         except Exception as e:
             logger.error(f"Registration error: {str(e)}")
@@ -138,17 +144,21 @@ async def admin_page(datasette, request):
                 break
         if ds_actor_cookie:
             try:
-                # Remove quotes if present
+                # Remove outer quotes if present
                 if ds_actor_cookie.startswith('"') and ds_actor_cookie.endswith('"'):
                     ds_actor_cookie = ds_actor_cookie[1:-1]
+                # Clean up escaped characters
+                ds_actor_cookie = ds_actor_cookie.replace('\\054', ',').replace('\\"', '"')
                 actor = json.loads(ds_actor_cookie)
                 logger.debug(f"Parsed actor from ds_actor cookie: {actor}")
+                # Update request scope to ensure actor persists
+                request.scope["actor"] = actor
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse ds_actor cookie: {e}, cookie value: {ds_actor_cookie}")
                 actor = None
 
     logger.debug(f"Admin page access: actor={actor}")
-    if not actor or actor.get("id") not in ["admin", "admin1"]:
+    if not actor or actor.get("id") not in ["admin", "admin1", "admin2"]:
         logger.warning("Unauthorized admin access attempt")
         return Response.redirect("/login")
 
@@ -183,14 +193,16 @@ async def update_content(datasette, request):
             try:
                 if ds_actor_cookie.startswith('"') and ds_actor_cookie.endswith('"'):
                     ds_actor_cookie = ds_actor_cookie[1:-1]
+                ds_actor_cookie = ds_actor_cookie.replace('\\054', ',').replace('\\"', '"')
                 actor = json.loads(ds_actor_cookie)
                 logger.debug(f"Parsed actor from ds_actor cookie: {actor}")
+                request.scope["actor"] = actor
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse ds_actor cookie: {e}, cookie value: {ds_actor_cookie}")
                 actor = None
 
     logger.debug(f"Update content: actor={actor}")
-    if not actor or actor.get("id") not in ["admin", "admin1"]:
+    if not actor or actor.get("id") not in ["admin", "admin1", "admin2"]:
         logger.warning("Unauthorized update attempt")
         return Response.redirect("/login")
 
@@ -283,7 +295,7 @@ async def update_content(datasette, request):
 
     await db.execute_write(
         'INSERT OR REPLACE INTO admin_content (section, content, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
-        (section, json.dumps(content))
+        (section, json.dumps(content, ensure_ascii=False))
     )
     logger.debug("Content updated successfully for section: %s", section)
     return Response.redirect('/admin?success=1')
@@ -370,7 +382,3 @@ def register_routes():
         (r"^/admin$", admin_page),
         (r"^/admin/update$", update_content),
     ]
-
-@hookimpl
-def skip_csrf(scope):
-    return scope["path"] in ["/login", "/register"]

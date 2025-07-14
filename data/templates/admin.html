@@ -29,7 +29,7 @@
         </div>
     </header>
     <main class="flex-grow pt-20 pb-6 container mx-auto px-4">
-        {% if actor and actor.id == "admin" %}
+        {% if actor and actor.id in ["admin", "admin1", "admin2"] %}
             <h2 class="text-2xl font-semibold text-primary mb-4">Manage Admin Content</h2>
             
             {% if request.args.get('success') %}
@@ -48,7 +48,7 @@
                 <h3 class="text-lg font-semibold text-primary mb-3">Header Image</h3>
                 <form action="/admin/update" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="section" value="header_image">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
                         <label class="block text-text mb-2">Current Image:</label>
                         {% if content.header_image.image_url %}
@@ -81,20 +81,20 @@
                 <h3 class="text-lg font-semibold text-primary mb-3">Info</h3>
                 <form action="/admin/update" method="post">
                     <input type="hidden" name="section" value="info">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
                         <label class="block text-text mb-2">Description:</label>
                         <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
                     </div>
-                    {% for i, paragraph in enumerate(content.info.paragraphs | default([])) %}
+                    {% for paragraph in content.info.paragraphs | default([]) %}
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Paragraph {{ i + 1 }}:</label>
-                        <textarea name="paragraph_{{ i }}" rows="3" class="w-full p-2 border rounded">{{ paragraph }}</textarea>
+                        <label class="block text-text mb-2">Paragraph {{ loop.index }}:</label>
+                        <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph }}</textarea>
                     </div>
                     {% endfor %}
                     <div class="mb-4">
                         <label class="block text-text mb-2">New Paragraph:</label>
-                        <textarea name="paragraph_{{ content.info.paragraphs | length }}" rows="3" class="w-full p-2 border rounded"></textarea>
+                        <textarea name="paragraph_{{ (content.info.paragraphs | default([]) | length) }}" rows="3" class="w-full p-2 border rounded"></textarea>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
                 </form>
@@ -104,25 +104,25 @@
                 <h3 class="text-lg font-semibold text-primary mb-3">Feature Cards</h3>
                 <form action="/admin/update" method="post">
                     <input type="hidden" name="section" value="feature_cards">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
-                    {% for i, card in enumerate(content.feature_cards | default([])) %}
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+                    {% for card in content.feature_cards | default([]) %}
                         <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Card {{ i + 1 }}</h4>
+                            <h4 class="text-md font-semibold text-primary mb-3">Card {{ loop.index }}:</h4>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Title:</label>
-                                <input type="text" name="card_title_{{ i }}" value="{{ card.title | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="card_title_{{ loop.index0 }}" value="{{ card.title | default('') }}" class="w-full p-2 border rounded">
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Description:</label>
-                                <textarea name="card_description_{{ i }}" rows="2" class="w-full p-2 border rounded">{{ card.description | default('') }}</textarea>
+                                <textarea name="card_description_{{ loop.index0 }}" rows="2" class="w-full p-2 border rounded">{{ card.description | default('') }}</textarea>
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="card_url_{{ i }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="card_url_{{ loop.index0 }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Icon (RemixIcon class):</label>
-                                <input type="text" name="card_icon_{{ i }}" value="{{ card.icon | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="card_icon_{{ loop.index0 }}" value="{{ card.icon | default('') }}" class="w-full p-2 border rounded">
                                 <p class="text-sm text-textlight mt-1">Example: ri-database-2-line</p>
                             </div>
                         </div>
@@ -131,19 +131,19 @@
                         <h4 class="text-md font-semibold text-primary mb-3">New Card</h4>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Title:</label>
-                            <input type="text" name="card_title_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="card_title_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Description:</label>
-                            <textarea name="card_description_{{ content.feature_cards | length }}" rows="2" class="w-full p-2 border rounded"></textarea>
+                            <textarea name="card_description_{{ (content.feature_cards | default([]) | length) }}" rows="2" class="w-full p-2 border rounded"></textarea>
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="card_url_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="card_url_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Icon (RemixIcon class):</label>
-                            <input type="text" name="card_icon_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="card_icon_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Feature Cards</button>
@@ -154,22 +154,22 @@
                 <h3 class="text-lg font-semibold text-primary mb-3">Statistics</h3>
                 <form action="/admin/update" method="post">
                     <input type="hidden" name="section" value="statistics">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
-                    {% for i, stat in enumerate(content.statistics | default([])) %}
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+                    {% for stat in content.statistics | default([]) %}
                         <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Statistic {{ i + 1 }}</h4>
+                            <h4 class="text-md font-semibold text-primary mb-3">Statistic {{ loop.index }}:</h4>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Label:</label>
-                                <input type="text" name="stat_label_{{ i }}" value="{{ stat.label | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="stat_label_{{ loop.index0 }}" value="{{ stat.label | default('') }}" class="w-full p-2 border rounded">
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Query:</label>
-                                <input type="text" name="stat_query_{{ i }}" value="{{ stat.query | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="stat_query_{{ loop.index0 }}" value="{{ stat.query | default('') }}" class="w-full p-2 border rounded">
                                 <p class="text-sm text-textlight mt-1">Example: SELECT COUNT(*) FROM emissions</p>
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="stat_url_{{ i }}" value="{{ stat.url | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="stat_url_{{ loop.index0 }}" value="{{ stat.url | default('') }}" class="w-full p-2 border rounded">
                             </div>
                         </div>
                     {% endfor %}
@@ -177,15 +177,15 @@
                         <h4 class="text-md font-semibold text-primary mb-3">New Statistic</h4>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Label:</label>
-                            <input type="text" name="stat_label_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="stat_label_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Query:</label>
-                            <input type="text" name="stat_query_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="stat_query_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="stat_url_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="stat_url_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Statistics</button>
@@ -196,7 +196,7 @@
                 <h3 class="text-lg font-semibold text-primary mb-3">Footer</h3>
                 <form action="/admin/update" method="post">
                     <input type="hidden" name="section" value="footer">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
                         <label class="block text-text mb-2">Icon (RemixIcon class):</label>
                         <input type="text" name="icon" value="{{ content.footer.icon | default('') }}" class="w-full p-2 border rounded">
@@ -206,16 +206,16 @@
                         <label class="block text-text mb-2">Text:</label>
                         <textarea name="text" rows="3" class="w-full p-2 border rounded">{{ content.footer.text | default('') }}</textarea>
                     </div>
-                    {% for i, link in enumerate(content.footer.links | default([])) %}
+                    {% for link in content.footer.links | default([]) %}
                         <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Link {{ i + 1 }}</h4>
+                            <h4 class="text-md font-semibold text-primary mb-3">Link {{ loop.index }}:</h4>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="link_url_{{ i }}" value="{{ link.url | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="link_url_{{ loop.index0 }}" value="{{ link.url | default('') }}" class="w-full p-2 border rounded">
                             </div>
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Text:</label>
-                                <input type="text" name="link_text_{{ i }}" value="{{ link.text | default('') }}" class="w-full p-2 border rounded">
+                                <input type="text" name="link_text_{{ loop.index0 }}" value="{{ link.text | default('') }}" class="w-full p-2 border rounded">
                             </div>
                         </div>
                     {% endfor %}
@@ -223,11 +223,11 @@
                         <h4 class="text-md font-semibold text-primary mb-3">New Link</h4>
                         <div class="mb-4">
                             <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="link_url_{{ content.footer.links | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="link_url_{{ (content.footer.links | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-text mb-2">Text:</label>
-                            <input type="text" name="link_text_{{ content.footer.links | length }}" class="w-full p-2 border rounded">
+                            <input type="text" name="link_text_{{ (content.footer.links | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Footer</button>
