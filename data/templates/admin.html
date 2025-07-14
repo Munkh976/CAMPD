@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <title>Admin - {{ metadata.title }}</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script src="/static/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/favicon.ico">
+</head>
+<body class="bg-background">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-header text-white shadow-md">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center mr-3">
+                    <i class="ri-earth-line text-white ri-2x" aria-hidden="true"></i>
+                </div>
+                <div class="text-xl font-semibold">Admin - {{ metadata.title }}</div>
+            </div>
+            <div>
+                {% if actor %}
+                    <p>Logged in as <span class="font-bold">{{ actor.name }}</span> (<a href="/logout" class="text-accent hover:text-primary">Logout</a>)</p>
+                {% else %}
+                    <p><a href="/login" class="text-accent hover:text-primary">Login</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    <main class="flex-grow pt-20 pb-6 container mx-auto px-4">
+        {% if actor and actor.id == "admin" %}
+            <h2 class="text-2xl font-semibold text-primary mb-4">Manage Admin Content</h2>
+            
+            {% if request.args.get('success') %}
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                    Content updated successfully!
+                </div>
+            {% endif %}
+            
+            {% if request.args.get('error') %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    Error: {{ request.args.get('error') }}
+                </div>
+            {% endif %}
+
+            <section class="bg-card rounded-card p-6 border border-border mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Header Image</h3>
+                <form action="/admin/update" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="section" value="header_image">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Current Image:</label>
+                        {% if content.header_image.image_url %}
+                            <img src="{{ content.header_image.image_url }}" alt="{{ content.header_image.alt_text }}" class="h-32 mb-2 rounded">
+                        {% else %}
+                            <p class="text-textlight">No image set</p>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Image File (.jpg or .png, max 5MB):</label>
+                        <input type="file" name="image" accept=".jpg,.png" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Alt Text:</label>
+                        <input type="text" name="alt_text" value="{{ content.header_image.alt_text | default('') }}" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Credit URL:</label>
+                        <input type="text" name="credit_url" value="{{ content.header_image.credit_url | default('') }}" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Credit Text:</label>
+                        <input type="text" name="credit_text" value="{{ content.header_image.credit_text | default('') }}" class="w-full p-2 border rounded">
+                    </div>
+                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Header Image</button>
+                </form>
+            </section>
+
+            <section class="bg-card rounded-card p-6 border border-border mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Info</h3>
+                <form action="/admin/update" method="post">
+                    <input type="hidden" name="section" value="info">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Description:</label>
+                        <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
+                    </div>
+                    {% for i, paragraph in enumerate(content.info.paragraphs | default([])) %}
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Paragraph {{ i + 1 }}:</label>
+                        <textarea name="paragraph_{{ i }}" rows="3" class="w-full p-2 border rounded">{{ paragraph }}</textarea>
+                    </div>
+                    {% endfor %}
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">New Paragraph:</label>
+                        <textarea name="paragraph_{{ content.info.paragraphs | length }}" rows="3" class="w-full p-2 border rounded"></textarea>
+                    </div>
+                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
+                </form>
+            </section>
+
+            <section class="bg-card rounded-card p-6 border border-border mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Feature Cards</h3>
+                <form action="/admin/update" method="post">
+                    <input type="hidden" name="section" value="feature_cards">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    {% for i, card in enumerate(content.feature_cards | default([])) %}
+                        <div class="mb-6 p-4 border rounded">
+                            <h4 class="text-md font-semibold text-primary mb-3">Card {{ i + 1 }}</h4>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Title:</label>
+                                <input type="text" name="card_title_{{ i }}" value="{{ card.title | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Description:</label>
+                                <textarea name="card_description_{{ i }}" rows="2" class="w-full p-2 border rounded">{{ card.description | default('') }}</textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">URL:</label>
+                                <input type="text" name="card_url_{{ i }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Icon (RemixIcon class):</label>
+                                <input type="text" name="card_icon_{{ i }}" value="{{ card.icon | default('') }}" class="w-full p-2 border rounded">
+                                <p class="text-sm text-textlight mt-1">Example: ri-database-2-line</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="mb-6 p-4 border border-dashed rounded">
+                        <h4 class="text-md font-semibold text-primary mb-3">New Card</h4>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Title:</label>
+                            <input type="text" name="card_title_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Description:</label>
+                            <textarea name="card_description_{{ content.feature_cards | length }}" rows="2" class="w-full p-2 border rounded"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL:</label>
+                            <input type="text" name="card_url_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Icon (RemixIcon class):</label>
+                            <input type="text" name="card_icon_{{ content.feature_cards | length }}" class="w-full p-2 border rounded">
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Feature Cards</button>
+                </form>
+            </section>
+
+            <section class="bg-card rounded-card p-6 border border-border mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Statistics</h3>
+                <form action="/admin/update" method="post">
+                    <input type="hidden" name="section" value="statistics">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    {% for i, stat in enumerate(content.statistics | default([])) %}
+                        <div class="mb-6 p-4 border rounded">
+                            <h4 class="text-md font-semibold text-primary mb-3">Statistic {{ i + 1 }}</h4>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Label:</label>
+                                <input type="text" name="stat_label_{{ i }}" value="{{ stat.label | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Query:</label>
+                                <input type="text" name="stat_query_{{ i }}" value="{{ stat.query | default('') }}" class="w-full p-2 border rounded">
+                                <p class="text-sm text-textlight mt-1">Example: SELECT COUNT(*) FROM emissions</p>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">URL:</label>
+                                <input type="text" name="stat_url_{{ i }}" value="{{ stat.url | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="mb-6 p-4 border border-dashed rounded">
+                        <h4 class="text-md font-semibold text-primary mb-3">New Statistic</h4>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Label:</label>
+                            <input type="text" name="stat_label_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Query:</label>
+                            <input type="text" name="stat_query_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL:</label>
+                            <input type="text" name="stat_url_{{ content.statistics | length }}" class="w-full p-2 border rounded">
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Statistics</button>
+                </form>
+            </section>
+
+            <section class="bg-card rounded-card p-6 border border-border mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Footer</h3>
+                <form action="/admin/update" method="post">
+                    <input type="hidden" name="section" value="footer">
+                    <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Icon (RemixIcon class):</label>
+                        <input type="text" name="icon" value="{{ content.footer.icon | default('') }}" class="w-full p-2 border rounded">
+                        <p class="text-sm text-textlight mt-1">Example: ri-earth-line</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Text:</label>
+                        <textarea name="text" rows="3" class="w-full p-2 border rounded">{{ content.footer.text | default('') }}</textarea>
+                    </div>
+                    {% for i, link in enumerate(content.footer.links | default([])) %}
+                        <div class="mb-6 p-4 border rounded">
+                            <h4 class="text-md font-semibold text-primary mb-3">Link {{ i + 1 }}</h4>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">URL:</label>
+                                <input type="text" name="link_url_{{ i }}" value="{{ link.url | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Text:</label>
+                                <input type="text" name="link_text_{{ i }}" value="{{ link.text | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="mb-6 p-4 border border-dashed rounded">
+                        <h4 class="text-md font-semibold text-primary mb-3">New Link</h4>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL:</label>
+                            <input type="text" name="link_url_{{ content.footer.links | length }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Text:</label>
+                            <input type="text" name="link_text_{{ content.footer.links | length }}" class="w-full p-2 border rounded">
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Footer</button>
+                </form>
+            </section>
+        {% else %}
+            <div class="bg-card rounded-card p-6 border border-border">
+                <h2 class="text-xl font-semibold text-primary mb-4">Admin Access Required</h2>
+                <p class="text-text mb-4">You must be logged in as an admin to view this page.</p>
+                {% if actor %}
+                    <p class="text-text mb-4">You are logged in as <span class="font-semibold">{{ actor.name }}</span> but don't have admin privileges.</p>
+                {% endif %}
+                <div class="flex gap-4">
+                    <a href="/login" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Login</a>
+                    <a href="/" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Return Home</a>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+    <footer class="bg-gray-50 border-t border-gray-100 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <div class="w-8 h-8 flex items-center justify-center mr-2">
+                        <i class="ri-earth-line text-primary ri-lg" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-primary">
+                        Made with <span class="text-red-500" aria-label="love">❤</span> by 
+                        <a href="https://envirodatagov.org" rel="nofollow" class="text-accent hover:text-primary">EDGI</a> and 
+                        <a href="https://screening-tools.com/" rel="nofollow" class="text-accent hover:text-primary">Public Environmental Data Partners</a>.
+                    </p>
+                </div>
+                <div>
+                    <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">Data licensed under ODbL</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

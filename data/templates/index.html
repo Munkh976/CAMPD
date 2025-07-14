@@ -1,151 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=0.9" />
-  <title>{{ metadata.title | default("EPA Clean Air Markets Program Data | EDGI") }}</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-  <script src="/static/js/tailwind.config.js"></script>
-
-  <!-- Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" />
-
-  <!-- Custom Styles -->
-  <link rel="stylesheet" href="/static/styles.css" />
-
-  <!-- Favicon -->
-  <link rel="icon" href="/static/favicon.ico" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <title>{{ metadata.title | default('CAMPD') }}</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script src="/static/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/favicon.ico">
 </head>
-
 <body class="bg-background">
-
-  <!-- Header -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-header text-white shadow-md">
-    <div class="container mx-auto px-4 h-20 flex items-center justify-between">
-      <div class="flex items-center">
-        <div class="w-10 h-10 flex items-center justify-center mr-3">
-          <i class="ri-earth-line text-white ri-2x" aria-hidden="true"></i>
+    <header class="fixed top-0 left-0 right-0 z-50 bg-header text-white shadow-md">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center mr-3">
+                    <i class="ri-earth-line text-white ri-2x" aria-hidden="true"></i>
+                </div>
+                <div class="text-xl font-semibold">{{ metadata.title | default('CAMPD') }}</div>
+            </div>
+            <div>
+                {% if actor %}
+                    <p>Logged in as {{ actor.name }} (<a href="/logout" class="text-accent hover:text-primary">Logout</a>)</p>
+                {% else %}
+                    <p><a href="/login" class="text-accent hover:text-primary">Login</a></p>
+                {% endif %}
+            </div>
         </div>
-        <div class="text-xl font-semibold">{{ metadata.title | default("EPA Clean Air Markets Program Data") }}</div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="flex-grow pt-20 pb-6">
-
-    <!-- Header Image Section -->
-    <section class="mt-4">
-      <div class="map-container relative">
-        <img src="/static/header.jpg" alt="CAMPD Header by J. Alex Lang" class="map-image" />
-        <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-          <a href="https://www.flickr.com/photos/jalexlang/21359307802/" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">
-            Image by J. Alex Lang. Used by permission.
-          </a>
+    </header>
+    <main class="flex-grow pt-20 pb-6">
+        <section class="mt-4">
+            <div class="map-container relative">
+                <img src="{{ header_image.image_url | default('/static/header.jpg') }}" alt="{{ header_image.alt_text | default('CAMPD Header by J. Alex Lang') }}" class="map-image">
+                {% if header_image.credit_url and header_image.credit_text %}
+                    <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        <a href="{{ header_image.credit_url }}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">{{ header_image.credit_text }}</a>
+                    </div>
+                {% else %}
+                    <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        <a href="https://www.flickr.com/photos/jalexlang/21359307802/" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">Image by J. Alex Lang. Used by permission.</a>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+        <section class="container mx-auto px-4 mt-4">
+            <div class="bg-card rounded-card p-6 border border-border">
+                <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default('CAMPD') }}</h2>
+                {% if info.description %}
+                    <p class="text-text mb-4">{{ info.description }}</p>
+                {% else %}
+                    <p class="text-text mb-4">{{ metadata.description | default('Metadata from EPA\'s Clean Air Markets Program Data (CAMPD) emissions database.') }}</p>
+                {% endif %}
+                {% for paragraph in info.paragraphs | default([]) %}
+                    <p class="text-text mb-4">{{ paragraph }}</p>
+                {% else %}
+                    <p class="text-text mb-4">
+                        This project, maintained by EDGI, serves as a virtual backup of CAMPD data, hosted on Zenodo and powered by Datasette. 
+                        The dataset is licensed under the <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">ODbL</a>.
+                    </p>
+                    <p class="text-text mb-4">
+                        Our code is open source. The archived data and code can be found at 
+                        <a href="https://github.com/willf/datasette-campd" class="text-accent hover:text-primary">EDGI GitHub</a>. 
+                        Explore the data interactively at 
+                        <a href="https://datasette.io/" class="text-accent hover:text-primary">Datasette</a> or access the original data at 
+                        <a href="https://campd.epa.gov/" class="text-accent hover:text-primary">EPA Clean Air Markets Program Data (CAMPD)</a> and 
+                        <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="text-accent hover:text-primary">Zenodo</a>.
+                    </p>
+                    <p class="text-text">
+                        Contact us at <a href="mailto:campd-support@camdsupport.com" class="text-accent hover:text-primary">contact@envirodatagov.org</a> 
+                        for support or inquiries.
+                    </p>
+                {% endfor %}
+                <div class="mt-4 flex flex-col md:flex-row gap-6">
+                    {% for card in feature_cards | default([]) %}
+                        <a href="{{ card.url }}" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
+                            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
+                                {% if card.icon %}
+                                    <i class="{{ card.icon }} text-accent mr-2"></i>
+                                {% else %}
+                                    <i class="ri-bar-chart-line text-accent mr-2"></i>
+                                {% endif %}
+                                {{ card.title | default("Untitled") }}
+                            </h3>
+                            <p class="text-textlight">{{ card.description | default("No description") }}</p>
+                        </a>
+                    {% else %}
+                        <a href="/CAMPD/emissions" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
+                            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
+                                <i class="ri-bar-chart-line text-accent mr-2"></i> Emissions Data
+                            </h3>
+                            <p class="text-textlight">Browse hourly and daily emissions data from power plants, including file descriptions and download links.</p>
+                        </a>
+                        <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
+                            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
+                                <i class="ri-bar-chart-line text-accent mr-2"></i> Data Archive
+                            </h3>
+                            <p class="text-textlight">Access CAMPD emissions data on Zenodo to explore locally with Datasette or other tools.</p>
+                        </a>
+                        <a href="https://www.epa.gov/airmarkets/cam-api-portal" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
+                            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
+                                <i class="ri-bar-chart-line text-accent mr-2"></i> CAM API Portal
+                            </h3>
+                            <p class="text-textlight">Access CAMPD data programmatically via the EPA’s REST API.</p>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <section class="container mx-auto px-4 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for stat in statistics | default([]) %}
+                    <a href="{{ stat.url }}" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
+                        <h2 class="text-4xl font-bold mb-2">{{ stat.value }}</h2>
+                        <p class="text-white hover:text-text">{{ stat.label }}</p>
+                    </a>
+                {% else %}
+                    <a href="/CAMPD/emissions" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
+                        <h2 class="text-4xl font-bold mb-2">
+                            {% set total_files = sql("SELECT COUNT(*) FROM emissions")[0][0] %}
+                            {{ total_files if total_files is not none else "N/A" }}
+                        </h2>
+                        <p class="text-white hover:text-text">Total Files</p>
+                    </a>
+                    <a href="/CAMPD/emissions?unit=hourly" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
+                        <h2 class="text-4xl font-bold mb-2">
+                            {% set hourly_files = sql("SELECT COUNT(*) FROM emissions WHERE unit = 'hourly'")[0][0] %}
+                            {{ hourly_files if hourly_files is not none else "N/A" }}
+                        </h2>
+                        <p class="text-white hover:text-text">Hourly Files</p>
+                    </a>
+                    <a href="/CAMPD/emissions?unit=daily" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
+                        <h2 class="text-4xl font-bold mb-2">
+                            {% set daily_files = sql("SELECT COUNT(*) FROM emissions WHERE unit = 'daily'")[0][0] %}
+                            {{ daily_files if daily_files is not none else "N/A" }}
+                        </h2>
+                        <p class="text-white hover:text-text">Daily Files</p>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <footer class="bg-gray-50 border-t border-gray-100 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <div class="w-8 h-8 flex items-center justify-center mr-2">
+                        <i class="{{ footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-primary">
+                        {{ footer.text | safe | default('Made with <span class="text-red-500" aria-label="love">❤</span> by <a href="https://envirodatagov.org" rel="nofollow" class="text-accent hover:text-primary">EDGI</a> and <a href="https://screening-tools.com/" rel="nofollow" class="text-accent hover:text-primary">Public Environmental Data Partners</a>.') }}
+                    </p>
+                </div>
+                <div>
+                    {% for link in footer.links | default([]) %}
+                        <a href="{{ link.url }}" class="text-accent hover:text-primary">{{ link.text }}</a>
+                    {% else %}
+                        <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">Data licensed under ODbL</a>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
-      </div>
-    </section>
-
-    <!-- Info Section -->
-    <section class="container mx-auto px-4 mt-4">
-      <div class="bg-card rounded-card p-6 border border-border">
-        <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default("EPA CAMPD") }}</h2>
-        <p class="text-text mb-4">
-          {{ metadata.description | default("The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule.") }}
-        </p>
-        <p class="text-text mb-4">
-          This project, maintained by EDGI, serves as a virtual backup of CAMPD data, hosted on Zenodo and powered by Datasette. 
-          It includes hourly and daily emissions data, accessible for download or interactive exploration. 
-          The dataset is licensed under the <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">ODbL</a>.
-        </p>
-        <p class="text-text mb-4">
-          Our code is open source. The archived data and code can be found at 
-          <a href="https://github.com/willf/datasette-campd" class="text-accent hover:text-primary">EDGI GitHub</a>. 
-          Explore the data interactively at 
-          <a href="https://datasette.io/" class="text-accent hover:text-primary">Datasette</a> or access the original data at 
-          <a href="https://campd.epa.gov/" class="text-accent hover:text-primary">EPA Clean Air Markets Program Data (CAMPD)</a> and 
-          <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="text-accent hover:text-primary">Zenodo</a>.
-        </p>
-        <p class="text-text">
-          Contact us at <a href="mailto:campd-support@camdsupport.com" class="text-accent hover:text-primary">contact@envirodatagov.org</a> 
-          for support or inquiries.
-        </p>
-
-        <!-- Feature Cards -->
-        <div class="mt-4 flex flex-col md:flex-row gap-6">
-          <a href="/CAMPD/emissions" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
-            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
-              <i class="ri-bar-chart-line text-accent mr-2"></i> Emissions Data
-            </h3>
-            <p class="text-textlight">Browse hourly and daily emissions data from power plants, including file descriptions and download links.</p>
-          </a>
-          <a href="https://zenodo.org/communities/edgi/records?q=campd&l=list&p=1&s=10&sort=bestmatch" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
-            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
-              <i class="ri-bar-chart-line text-accent mr-2"></i> Data Archive
-            </h3>
-            <p class="text-textlight">Access CAMPD emissions data on Zenodo to explore locally with Datasette or other tools.</p>
-          </a>
-          <a href="https://www.epa.gov/airmarkets/cam-api-portal" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
-            <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
-              <i class="ri-bar-chart-line text-accent mr-2"></i> CAM API Portal
-            </h3>
-            <p class="text-textlight">Access CAMPD data programmatically via the EPA’s REST API.</p>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Statistics Section -->
-    <section class="container mx-auto px-4 mt-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a href="/CAMPD/emissions" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
-          <h2 class="text-4xl font-bold mb-2">
-            {% set total_files = sql("SELECT COUNT(*) FROM emissions")[0][0] %}
-            {{ total_files if total_files is not none else "N/A" }}
-          </h2>
-          <p class="text-white hover:text-text">Total Files</p>
-        </a>
-        <a href="/CAMPD/emissions?unit=hourly" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
-          <h2 class="text-4xl font-bold mb-2">
-            {% set hourly_files = sql("SELECT COUNT(*) FROM emissions WHERE unit = 'hourly'")[0][0] %}
-            {{ hourly_files if hourly_files is not none else "N/A" }}
-          </h2>
-          <p class="text-white hover:text-text">Hourly Files</p>
-        </a>
-        <a href="/CAMPD/emissions?unit=daily" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
-          <h2 class="text-4xl font-bold mb-2">
-            {% set daily_files = sql("SELECT COUNT(*) FROM emissions WHERE unit = 'daily'")[0][0] %}
-            {{ daily_files if total_files is not none else "N/A" }}
-          </h2>
-          <p class="text-white hover:text-text">Daily Files</p>
-        </a>
-      </div>
-    </section>
-
-  <!-- Footer -->
-  <footer class="bg-gray-50 border-t border-gray-100 py-8">
-    <div class="container mx-auto px-4">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="flex items-center mb-4 md:mb-0">
-          <div class="w-8 h-8 flex items-center justify-center mr-2">
-            <i class="ri-earth-line text-primary ri-lg" aria-hidden="true"></i>
-          </div>
-          <p class="text-primary">
-            Made with <span class="text-red-500" aria-label="love">❤</span> by 
-            <a href="https://envirodatagov.org" rel="nofollow" class="text-accent hover:text-primary">EDGI</a> and 
-            <a href="https://screening-tools.com/" rel="nofollow" class="text-accent hover:text-primary">Public Environmental Data Partners</a>.
-          </p>
-        </div>
-        <div>
-          <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">
-            Data licensed under ODbL
-          </a>
-        </div>
-      </div>
-    </div>
-  </footer>
-
+    </footer>
 </body>
 </html>
