@@ -123,9 +123,32 @@ async def logout_page(datasette, request):
     return response
 
 async def admin_page(datasette, request):
+    cookies = {k.decode('utf-8'): v.decode('utf-8') for k, v in request.scope.get('headers', []) if k.decode('utf-8') == 'cookie'}
+    logger.debug(f"Admin Cookies: {cookies}")
+    
+    # Try to get actor from request.scope
     actor = request.scope.get("actor")
+    if not actor:
+        # Fallback to parsing ds_actor cookie manually
+        cookie_string = cookies.get("cookie", "")
+        ds_actor_cookie = None
+        for cookie in cookie_string.split("; "):
+            if cookie.startswith("ds_actor="):
+                ds_actor_cookie = cookie[len("ds_actor="):]
+                break
+        if ds_actor_cookie:
+            try:
+                # Remove quotes if present
+                if ds_actor_cookie.startswith('"') and ds_actor_cookie.endswith('"'):
+                    ds_actor_cookie = ds_actor_cookie[1:-1]
+                actor = json.loads(ds_actor_cookie)
+                logger.debug(f"Parsed actor from ds_actor cookie: {actor}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse ds_actor cookie: {e}, cookie value: {ds_actor_cookie}")
+                actor = None
+
     logger.debug(f"Admin page access: actor={actor}")
-    if not actor or actor.get("id") != "admin":
+    if not actor or actor.get("id") not in ["admin", "admin1"]:
         logger.warning("Unauthorized admin access attempt")
         return Response.redirect("/login")
 
@@ -147,9 +170,27 @@ async def admin_page(datasette, request):
     )
 
 async def update_content(datasette, request):
+    cookies = {k.decode('utf-8'): v.decode('utf-8') for k, v in request.scope.get('headers', []) if k.decode('utf-8') == 'cookie'}
     actor = request.scope.get("actor")
+    if not actor:
+        cookie_string = cookies.get("cookie", "")
+        ds_actor_cookie = None
+        for cookie in cookie_string.split("; "):
+            if cookie.startswith("ds_actor="):
+                ds_actor_cookie = cookie[len("ds_actor="):]
+                break
+        if ds_actor_cookie:
+            try:
+                if ds_actor_cookie.startswith('"') and ds_actor_cookie.endswith('"'):
+                    ds_actor_cookie = ds_actor_cookie[1:-1]
+                actor = json.loads(ds_actor_cookie)
+                logger.debug(f"Parsed actor from ds_actor cookie: {actor}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse ds_actor cookie: {e}, cookie value: {ds_actor_cookie}")
+                actor = None
+
     logger.debug(f"Update content: actor={actor}")
-    if not actor or actor.get("id") != "admin":
+    if not actor or actor.get("id") not in ["admin", "admin1"]:
         logger.warning("Unauthorized update attempt")
         return Response.redirect("/login")
 
@@ -268,7 +309,6 @@ async def index_page(datasette, request):
     statistics = await get_section("statistics")
     footer = await get_section("footer")
 
-    # Ensure statistics is a list
     if isinstance(statistics, str):
         try:
             statistics = json.loads(statistics)
@@ -278,7 +318,6 @@ async def index_page(datasette, request):
     if not isinstance(statistics, list):
         statistics = []
 
-    # Prepare statistics with computed values
     statistics_data = []
     for stat in statistics:
         query = stat.get("query", "")
