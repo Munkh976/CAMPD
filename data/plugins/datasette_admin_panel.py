@@ -5,15 +5,19 @@ from pathlib import Path
 from datetime import datetime
 from datasette import hookimpl
 from datasette.utils.asgi import Response
-from markupsafe import escape
 from email.parser import BytesParser
 from email.policy import default
+import bleach
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {'.jpg', '.png'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+def sanitize_text(text):
+    """Sanitize text by stripping HTML tags while preserving safe characters."""
+    return bleach.clean(text, tags=[], strip=True)
 
 async def login_page(datasette, request):
     logger.debug(f"Login request: method={request.method}, scope={request.scope}")
@@ -204,8 +208,9 @@ async def update_content(datasette, request):
     db = datasette.get_database('CAMPD')
     section = None
     post_vars = {}
+    files = {}
 
-    # Handle multipart form data for header_image
+    # Handle multipart form data
     if 'multipart/form-data' in request.headers.get('content-type', '').lower():
         try:
             body = await request.post_body()
@@ -251,7 +256,25 @@ async def update_content(datasette, request):
             logger.debug(f"Updating section: {section}")
 
             if section == 'header_image':
-                if 'image' in files:
+                # Get current header_image data from database
+                current_content = {}
+                result = await db.execute("SELECT content FROM admin_content WHERE section = ?", ["header_image"])
+                row = result.first()
+                if row:
+                    try:
+                        current_content = json.loads(row["content"])
+                    except json.JSONDecodeError as e:
+                        logger.error(f"JSON decode error for header_image: {str(e)}")
+                        current_content = {}
+
+                content = {
+                    'image_url': current_content.get('image_url', '/static/header.jpg'),
+                    'alt_text': sanitize_text(forms.get('alt_text', [''])[0]),
+                    'credit_url': sanitize_text(forms.get('credit_url', [''])[0]),
+                    'credit_text': sanitize_text(forms.get('credit_text', [''])[0])
+                }
+
+                if 'image' in files and files['image']['content']:
                     file = files['image']
                     if len(file['content']) > MAX_FILE_SIZE:
                         logger.error("File exceeds 5MB limit")
@@ -266,15 +289,7 @@ async def update_content(datasette, request):
                     file_path = upload_dir / filename
                     with open(file_path, 'wb') as f:
                         f.write(file['content'])
-                    content = {
-                        'image_url': f'/static/uploads/{filename}',
-                        'alt_text': escape(forms.get('alt_text', [''])[0]),
-                        'credit_url': escape(forms.get('credit_url', [''])[0]),
-                        'credit_text': escape(forms.get('credit_text', [''])[0])
-                    }
-                else:
-                    logger.error("No image file provided")
-                    return Response.json({'error': 'No image file provided'}, status=400)
+                    content['image_url'] = f'/static/uploads/{filename}'
             else:
                 # For non-file sections, use form data
                 post_vars = {k: v[0] for k, v in forms.items()}
@@ -292,21 +307,21 @@ async def update_content(datasette, request):
         i = 0
         while f'paragraph_{i}' in post_vars:
             paragraphs.append({
-                'text': escape(post_vars[f'paragraph_{i}']),
-                'url': escape(post_vars.get(f'paragraph_url_{i}', '')),
-                'url_text': escape(post_vars.get(f'paragraph_url_text_{i}', ''))
+                'text': sanitize_text(post_vars[f'paragraph_{i}']),
+                'url': sanitize_text(post_vars.get(f'paragraph_url_{i}', '')),
+                'url_text': sanitize_text(post_vars.get(f'paragraph_url_text_{i}', ''))
             })
             i += 1
-        content = {'description': escape(post_vars.get('description', '')), 'paragraphs': paragraphs}
+        content = {'description': sanitize_text(post_vars.get('description', '')), 'paragraphs': paragraphs}
 
     elif section == 'feature_cards':
         cards = []
         i = 0
         while f'card_title_{i}' in post_vars:
             cards.append({
-                'title': escape(post_vars[f'card_title_{i}']),
-                'description': escape(post_vars[f'card_description_{i}']),
-                'url': escape(post_vars[f'card_url_{i}']),
+                'title': sanitize_text(post_vars[f'card_title_{i}']),
+                'description': sanitize_text(post_vars[f'card_description_{i}']),
+                'url': sanitize_text(post_vars[f'card_url_{i}']),
                 'icon': 'ri-bar-chart-line'  # Static icon
             })
             i += 1
@@ -321,9 +336,9 @@ async def update_content(datasette, request):
                 logger.error("Invalid SQL query: %s", query)
                 return Response.json({'error': 'Invalid SQL query'}, status=400)
             stats.append({
-                'label': escape(post_vars[f'stat_label_{i}']),
-                'query': query,
-                'url': escape(post_vars[f'stat_url_{i}'])
+                'label': sanitize_text(post_vars[f'stat_label_{i}']),
+                'query': query,  # SQL query is not sanitized to preserve functionality
+                'url': sanitize_text(post_vars[f'stat_url_{i}'])
             })
             i += 1
         content = stats
@@ -331,17 +346,17 @@ async def update_content(datasette, request):
     elif section == 'footer':
         links = []
         i = 0
-        while f'link_url_{i}' in post_vars:
+        while f'link_url_{i}' in post_vars or f'link_text_{i}' in post_vars:
             links.append({
-                'url': escape(post_vars[f'link_url_{i}']),
-                'text': escape(post_vars[f'link_text_{i}'])
+                'url': sanitize_text(post_vars.get(f'link_url_{i}', '')),
+                'text': sanitize_text(post_vars[f'link_text_{i}'])
             })
             i += 1
         content = {
             'icon': 'ri-earth-line',  # Static icon
-            'text': escape(post_vars.get('text', '')),
-            'text_url': escape(post_vars.get('text_url', '')),
-            'text_url_text': escape(post_vars.get('text_url_text', '')),
+            'text': sanitize_text(post_vars.get('text', '')),
+            'text_url': sanitize_text(post_vars.get('text_url', '')),
+            'text_url_text': sanitize_text(post_vars.get('text_url_text', '')),
             'links': links
         }
 

@@ -87,7 +87,7 @@
                         <i class="{{ footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
                     </div>
                     <p class="text-primary">
-                        {{ footer.text | default('Made with <span class="text-red-500" aria-label="love">❤</span> by <a href="https://envirodatagov.org" rel="nofollow" class="text-accent hover:text-primary">EDGI</a> and <a href="https://screening-tools.com/" rel="nofollow" class="text-accent hover:text-primary">Public Environmental Data Partners</a>.') | safe }}
+                        {{ footer.text | safe }}
                         {% if footer.text_url and footer.text_url_text %}
                             <a href="{{ footer.text_url }}" class="text-accent hover:text-primary">{{ footer.text_url_text }}</a>
                         {% endif %}
@@ -97,7 +97,6 @@
                     {% for link in footer.links | default([]) %}
                         <a href="{{ link.url }}" class="text-accent hover:text-primary mr-4">{{ link.text }}</a>
                     {% endfor %}
-                    <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">Data licensed under ODbL</a>
                 </div>
             </div>
         </div>

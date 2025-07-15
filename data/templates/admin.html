@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" href="/static/favicon.ico">
     <style>
-        /* Hide default file input button and style the label */
         .custom-file-input {
             display: inline-block;
             position: relative;
@@ -34,7 +33,182 @@
         .custom-file-input label:hover {
             background-color: #1e4e8c; /* bg-accent-dark */
         }
+        .edit-section {
+            display: none;
+        }
+        .display-section {
+            margin-bottom: 1rem;
+            display: block;
+        }
+        .map-container {
+            position: relative;
+        }
+        .map-image {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+        }
+        .dynamic-field {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px dashed #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        .edit-button {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            line-height: 1.5rem;
+        }
     </style>
+    <script>
+        function toggleEdit(sectionId) {
+            const display = document.getElementById(`display-${sectionId}`);
+            const edit = document.getElementById(`edit-${sectionId}`);
+            const form = edit.querySelector('form');
+            if (display.style.display === 'none') {
+                display.style.display = 'block';
+                edit.style.display = 'none';
+                form.reset(); // Reset form to initial state
+                // Remove dynamically added fields
+                const dynamicContainers = edit.querySelectorAll('.dynamic-field');
+                dynamicContainers.forEach(container => container.remove());
+            } else {
+                display.style.display = 'none';
+                edit.style.display = 'block';
+            }
+        }
+
+        function updateFilePath(inputId, spanId) {
+            const input = document.getElementById(inputId);
+            const span = document.getElementById(spanId);
+            if (input.files && input.files.length > 0) {
+                span.textContent = `Selected: ${input.files[0].name}`;
+            } else {
+                span.textContent = '';
+            }
+        }
+
+        function addNewParagraph(sectionId, includeLink = true) {
+            const container = document.getElementById(`${sectionId}-new-paragraphs`);
+            const existingFields = container.querySelectorAll('.dynamic-field').length;
+            const index = existingFields + (document.querySelectorAll(`[name^=paragraph_][name$="]"]`).length);
+            const div = document.createElement('div');
+            div.className = 'dynamic-field';
+            div.innerHTML = `
+                <h4 class="text-md font-semibold text-primary mb-3">New Paragraph ${index + 1}</h4>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Text:</label>
+                    <textarea name="paragraph_${index}" rows="3" class="w-full p-2 border rounded"></textarea>
+                </div>
+                ${includeLink ? `
+                <div class="mb-4">
+                    <label class="block text-text mb-2">URL:</label>
+                    <input type="text" name="paragraph_url_${index}" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">URL Text:</label>
+                    <input type="text" name="paragraph_url_text_${index}" class="w-full p-2 border rounded">
+                </div>
+                ` : ''}
+                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Paragraph</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addNewCard(sectionId) {
+            const container = document.getElementById(`${sectionId}-new-cards`);
+            const existingFields = container.querySelectorAll('.dynamic-field').length;
+            const index = existingFields + (document.querySelectorAll(`[name^=card_title_]`).length);
+            const div = document.createElement('div');
+            div.className = 'dynamic-field';
+            div.innerHTML = `
+                <h4 class="text-md font-semibold text-primary mb-3">New Card ${index + 1}</h4>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Title:</label>
+                    <input type="text" name="card_title_${index}" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Description:</label>
+                    <textarea name="card_description_${index}" rows="2" class="w-full p-2 border rounded"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">URL:</label>
+                    <input type="text" name="card_url_${index}" class="w-full p-2 border rounded">
+                </div>
+                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Card</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addNewStatistic(sectionId) {
+            const container = document.getElementById(`${sectionId}-new-statistics`);
+            const existingFields = container.querySelectorAll('.dynamic-field').length;
+            const index = existingFields + (document.querySelectorAll(`[name^=stat_label_]`).length);
+            const div = document.createElement('div');
+            div.className = 'dynamic-field';
+            div.innerHTML = `
+                <h4 class="text-md font-semibold text-primary mb-3">New Statistic ${index + 1}</h4>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Label:</label>
+                    <input type="text" name="stat_label_${index}" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Query:</label>
+                    <input type="text" name="stat_query_${index}" class="w-full p-2 border rounded">
+                    <p class="text-sm text-textlight mt-1">Example: SELECT COUNT(*) FROM emissions</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">URL:</label>
+                    <input type="text" name="stat_url_${index}" class="w-full p-2 border rounded">
+                </div>
+                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Statistic</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addNewFooterText(sectionId) {
+            const container = document.getElementById(`${sectionId}-new-links`);
+            const existingFields = container.querySelectorAll('.dynamic-field').length;
+            const index = existingFields + (document.querySelectorAll(`[name^=link_url_]`).length);
+            const div = document.createElement('div');
+            div.className = 'dynamic-field';
+            div.innerHTML = `
+                <h4 class="text-md font-semibold text-primary mb-3">New Text ${index + 1}</h4>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Text:</label>
+                    <input type="text" name="link_text_${index}" class="w-full p-2 border rounded">
+                </div>
+                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Text</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addNewFooterLink(sectionId) {
+            const container = document.getElementById(`${sectionId}-new-links`);
+            const existingFields = container.querySelectorAll('.dynamic-field').length;
+            const index = existingFields + (document.querySelectorAll(`[name^=link_url_]`).length);
+            const div = document.createElement('div');
+            div.className = 'dynamic-field';
+            div.innerHTML = `
+                <h4 class="text-md font-semibold text-primary mb-3">New Link ${index + 1}</h4>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">URL:</label>
+                    <input type="text" name="link_url_${index}" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-text mb-2">Text:</label>
+                    <input type="text" name="link_text_${index}" class="w-full p-2 border rounded">
+                </div>
+                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Link</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeField(element) {
+            element.parentNode.remove();
+        }
+    </script>
 </head>
 <body class="bg-background">
     <header class="fixed top-0 left-0 right-0 z-50 bg-header text-white shadow-md">
@@ -45,210 +219,244 @@
                 </div>
                 <div class="text-xl font-semibold">Admin - {{ metadata.title }}</div>
             </div>
-            <div>
+            <nav>
+                <a href="/" class="text-white hover:text-accent mr-4">Home</a>
                 {% if actor %}
-                    <p>Logged in as <span class="font-bold">{{ actor.name }}</span> (<a href="/logout" class="text-accent hover:text-primary">Logout</a>)</p>
+                    <a href="/logout" class="text-white hover:text-accent">Logout</a>
                 {% else %}
-                    <p><a href="/login" class="text-accent hover:text-primary">Login</a></p>
+                    <a href="/login" class="text-white hover:text-accent mr-4">Login</a>
+                    <a href="/register" class="text-white hover:text-accent">Register</a>
                 {% endif %}
-            </div>
+            </nav>
         </div>
     </header>
-    <main class="flex-grow pt-20 pb-6 container mx-auto px-4">
+    <main class="flex-grow pt-20 pb-6">
         {% if actor and actor.id in ["admin", "admin1", "admin2"] %}
-            <h2 class="text-2xl font-semibold text-primary mb-4">Manage Admin Content</h2>
-            
-            {% if request.args.get('success') %}
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                    Content updated successfully!
+            <section class="mt-4">
+                <div class="map-container relative">
+                    <img src="{{ content.header_image.image_url | default('/static/header.jpg') }}" alt="{{ content.header_image.alt_text | default('CAMPD Header by J. Alex Lang') }}" class="map-image">
+                    {% if content.header_image.credit_url %}
+                        <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                            <a href="{{ content.header_image.credit_url }}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">
+                                {{ content.header_image.credit_text | default('Image by J. Alex Lang. Used by permission.') }}
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
-            
-            {% if request.args.get('error') %}
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    Error: {{ request.args.get('error') }}
-                </div>
-            {% endif %}
-
-            <section class="bg-card rounded-card p-6 border border-border mb-6">
-                <h3 class="text-lg font-semibold text-primary mb-3">Header Image</h3>
-                <form action="/admin/update" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="section" value="header_image">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Current Image:</label>
-                        {% if content.header_image.image_url %}
-                            <img src="{{ content.header_image.image_url }}" alt="{{ content.header_image.alt_text }}" class="h-32 mb-2 rounded">
-                        {% else %}
-                            <p class="text-textlight">No image set</p>
-                        {% endif %}
+                <div class="container mx-auto px-4 mt-4">
+                    <div id="display-header_image" class="display-section">
+                        <button onclick="toggleEdit('header_image')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Header Image</button>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Image File (.jpg or .png, max 5MB):</label>
-                        <div class="custom-file-input">
-                            <input type="file" name="image" id="image" accept=".jpg,.png">
-                            <label for="image">Choose picture</label>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Alt Text:</label>
-                        <input type="text" name="alt_text" value="{{ content.header_image.alt_text | default('') }}" class="w-full p-2 border rounded">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Credit URL:</label>
-                        <input type="text" name="credit_url" value="{{ content.header_image.credit_url | default('') }}" class="w-full p-2 border rounded">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Credit Text:</label>
-                        <input type="text" name="credit_text" value="{{ content.header_image.credit_text | default('') }}" class="w-full p-2 border rounded">
-                    </div>
-                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Header Image</button>
-                </form>
-            </section>
-
-            <section class="bg-card rounded-card p-6 border border-border mb-6">
-                <h3 class="text-lg font-semibold text-primary mb-3">Info</h3>
-                <form action="/admin/update" method="post">
-                    <input type="hidden" name="section" value="info">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Description:</label>
-                        <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
-                    </div>
-                    {% for paragraph in content.info.paragraphs | default([]) %}
-                    <div class="mb-6 p-4 border rounded">
-                        <h4 class="text-md font-semibold text-primary mb-3">Paragraph {{ loop.index }}:</h4>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Text:</label>
-                            <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph.text | default('') }}</textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="paragraph_url_{{ loop.index0 }}" value="{{ paragraph.url | default('') }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL Text:</label>
-                            <input type="text" name="paragraph_url_text_{{ loop.index0 }}" value="{{ paragraph.url_text | default('') }}" class="w-full p-2 border rounded">
-                        </div>
-                    </div>
-                    {% endfor %}
-                    <div class="mb-6 p-4 border border-dashed rounded">
-                        <h4 class="text-md font-semibold text-primary mb-3">New Paragraph</h4>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Text:</label>
-                            <textarea name="paragraph_{{ (content.info.paragraphs | default([]) | length) }}" rows="3" class="w-full p-2 border rounded"></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="paragraph_url_{{ (content.info.paragraphs | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL Text:</label>
-                            <input type="text" name="paragraph_url_text_{{ (content.info.paragraphs | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                    </div>
-                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
-                </form>
-            </section>
-
-            <section class="bg-card rounded-card p-6 border border-border mb-6">
-                <h3 class="text-lg font-semibold text-primary mb-3">Feature Cards</h3>
-                <form action="/admin/update" method="post">
-                    <input type="hidden" name="section" value="feature_cards">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-                    {% for card in content.feature_cards | default([]) %}
-                        <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Card {{ loop.index }}:</h4>
+                    <div id="edit-header_image" class="edit-section">
+                        <form action="/admin/update" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="section" value="header_image">
+                            <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                             <div class="mb-4">
-                                <label class="block text-text mb-2">Title:</label>
-                                <input type="text" name="card_title_{{ loop.index0 }}" value="{{ card.title | default('') }}" class="w-full p-2 border rounded">
+                                <label class="block text-text mb-2">Image File (.jpg or .png, max 5MB):</label>
+                                <div class="custom-file-input">
+                                    <input type="file" name="image" id="image" accept=".jpg,.png" onchange="updateFilePath('image', 'file-path')">
+                                    <label for="image">Choose picture</label>
+                                </div>
+                                <span id="file-path" class="text-textlight text-sm"></span>
                             </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Alt Text:</label>
+                                <input type="text" name="alt_text" value="{{ content.header_image.alt_text | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Credit URL:</label>
+                                <input type="text" name="credit_url" value="{{ content.header_image.credit_url | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Credit Text:</label>
+                                <input type="text" name="credit_text" value="{{ content.header_image.credit_text | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Header Image</button>
+                            <button type="button" onclick="toggleEdit('header_image')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+            <section class="container mx-auto px-4 mt-4">
+                <div class="bg-card rounded-card p-6 border border-border">
+                    <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default("EPA CAMPD") }}</h2>
+                    <div id="display-info" class="display-section">
+                        <p class="text-text mb-4">{{ content.info.description | default("The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule.") }}</p>
+                        {% for paragraph in content.info.paragraphs | default([]) %}
+                            <p class="text-text mb-4">
+                                {{ paragraph.text | safe }}
+                                {% if paragraph.url and paragraph.url_text %}
+                                    <a href="{{ paragraph.url }}" class="text-accent hover:text-primary">{{ paragraph.url_text }}</a>
+                                {% endif %}
+                            </p>
+                        {% endfor %}
+                        <button onclick="toggleEdit('info')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Info</button>
+                    </div>
+                    <div id="edit-info" class="edit-section">
+                        <form action="/admin/update" method="post">
+                            <input type="hidden" name="section" value="info">
+                            <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                             <div class="mb-4">
                                 <label class="block text-text mb-2">Description:</label>
-                                <textarea name="card_description_{{ loop.index0 }}" rows="2" class="w-full p-2 border rounded">{{ card.description | default('') }}</textarea>
+                                <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
                             </div>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="card_url_{{ loop.index0 }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
-                            </div>
-                        </div>
-                    {% endfor %}
-                    <div class="mb-6 p-4 border border-dashed rounded">
-                        <h4 class="text-md font-semibold text-primary mb-3">New Card</h4>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Title:</label>
-                            <input type="text" name="card_title_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Description:</label>
-                            <textarea name="card_description_{{ (content.feature_cards | default([]) | length) }}" rows="2" class="w-full p-2 border rounded"></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="card_url_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
+                            {% for paragraph in content.info.paragraphs | default([]) %}
+                                <div class="mb-6 p-4 border rounded">
+                                    <h4 class="text-md font-semibold text-primary mb-3">Paragraph {{ loop.index }}:</h4>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">Text:</label>
+                                        <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph.text | default('') }}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">URL:</label>
+                                        <input type="text" name="paragraph_url_{{ loop.index0 }}" value="{{ paragraph.url | default('') }}" class="w-full p-2 border rounded">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">URL Text:</label>
+                                        <input type="text" name="paragraph_url_text_{{ loop.index0 }}" value="{{ paragraph.url_text | default('') }}" class="w-full p-2 border rounded">
+                                    </div>
+                                    <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Paragraph</button>
+                                </div>
+                            {% endfor %}
+                            <div id="info-new-paragraphs" class="mb-4"></div>
+                            <button type="button" onclick="addNewParagraph('info', false)" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Text</button>
+                            <button type="button" onclick="addNewParagraph('info', true)" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Link</button>
+                            <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
+                            <button type="button" onclick="toggleEdit('info')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                        </form>
                     </div>
-                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Feature Cards</button>
-                </form>
-            </section>
-
-            <section class="bg-card rounded-card p-6 border border-border mb-6">
-                <h3 class="text-lg font-semibold text-primary mb-3">Statistics</h3>
-                <form action="/admin/update" method="post">
-                    <input type="hidden" name="section" value="statistics">
-                    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-                    {% for stat in content.statistics | default([]) %}
-                        <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Statistic {{ loop.index }}:</h4>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">Label:</label>
-                                <input type="text" name="stat_label_{{ loop.index0 }}" value="{{ stat.label | default('') }}" class="w-full p-2 border rounded">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">Query:</label>
-                                <input type="text" name="stat_query_{{ loop.index0 }}" value="{{ stat.query | default('') }}" class="w-full p-2 border rounded">
-                                <p class="text-sm text-textlight mt-1">Example: SELECT COUNT(*) FROM emissions</p>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="stat_url_{{ loop.index0 }}" value="{{ stat.url | default('') }}" class="w-full p-2 border rounded">
-                            </div>
-                        </div>
-                    {% endfor %}
-                    <div class="mb-6 p-4 border border-dashed rounded">
-                        <h4 class="text-md font-semibold text-primary mb-3">New Statistic</h4>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Label:</label>
-                            <input type="text" name="stat_label_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Query:</label>
-                            <input type="text" name="stat_query_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="stat_url_{{ (content.statistics | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
+                    <div id="display-feature_cards" class="display-section mt-4 flex flex-col md:flex-row gap-6">
+                        {% for card in content.feature_cards | default([]) %}
+                            <a href="{{ card.url }}" class="flex-1 bg-white p-5 rounded-card border border-gray-200 hover:bg-gray-100 transition">
+                                <h3 class="text-lg font-semibold text-accent mb-3 flex items-center">
+                                    <i class="{{ card.icon }} text-accent mr-2"></i> {{ card.title }}
+                                </h3>
+                                <p class="text-textlight">{{ card.description }}</p>
+                            </a>
+                        {% endfor %}
+                        <button onclick="toggleEdit('feature_cards')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Feature Cards</button>
                     </div>
-                    <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Statistics</button>
-                </form>
+                    <div id="edit-feature_cards" class="edit-section">
+                        <form action="/admin/update" method="post">
+                            <input type="hidden" name="section" value="feature_cards">
+                            <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+                            {% for card in content.feature_cards | default([]) %}
+                                <div class="mb-6 p-4 border rounded">
+                                    <h4 class="text-md font-semibold text-primary mb-3">Card {{ loop.index }}:</h4>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">Title:</label>
+                                        <input type="text" name="card_title_{{ loop.index0 }}" value="{{ card.title | default('') }}" class="w-full p-2 border rounded">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">Description:</label>
+                                        <textarea name="card_description_{{ loop.index0 }}" rows="2" class="w-full p-2 border rounded">{{ card.description | default('') }}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-text mb-2">URL:</label>
+                                        <input type="text" name="card_url_{{ loop.index0 }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
+                                    </div>
+                                    <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Card</button>
+                                </div>
+                            {% endfor %}
+                            <div id="feature_cards-new-cards" class="mb-4"></div>
+                            <button type="button" onclick="addNewCard('feature_cards')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Card</button>
+                            <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Feature Cards</button>
+                            <button type="button" onclick="toggleEdit('feature_cards')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                        </form>
+                    </div>
+                </div>
             </section>
-
-            <section class="bg-card rounded-card p-6 border border-border mb-6">
-                <h3 class="text-lg font-semibold text-primary mb-3">Footer</h3>
+            <section class="container mx-auto px-4 mt-6">
+                <div id="display-statistics" class="display-section grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% for stat in content.statistics %}
+                        <a href="{{ stat.url }}" class="bg-accent rounded-card p-6 text-center hover:bg-gray-200 transition text-white hover:text-text">
+                            <h2 class="text-4xl font-bold mb-2">{{ stat.value }}</h2>
+                            <p class="text-white hover:text-text">{{ stat.label }}</p>
+                        </a>
+                    {% endfor %}
+                    <button onclick="toggleEdit('statistics')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Statistics</button>
+                </div>
+                <div id="edit-statistics" class="edit-section">
+                    <form action="/admin/update" method="post">
+                        <input type="hidden" name="section" value="statistics">
+                        <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+                        {% for stat in content.statistics | default([]) %}
+                            <div class="mb-6 p-4 border rounded">
+                                <h4 class="text-md font-semibold text-primary mb-3">Statistic {{ loop.index }}:</h4>
+                                <div class="mb-4">
+                                    <label class="block text-text mb-2">Label:</label>
+                                    <input type="text" name="stat_label_{{ loop.index0 }}" value="{{ stat.label | default('') }}" class="w-full p-2 border rounded">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-text mb-2">Query:</label>
+                                    <input type="text" name="stat_query_{{ loop.index0 }}" value="{{ stat.query | default('') }}" class="w-full p-2 border rounded">
+                                    <p class="text-sm text-textlight mt-1">Example: SELECT COUNT(*) FROM emissions</p>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-text mb-2">URL:</label>
+                                    <input type="text" name="stat_url_{{ loop.index0 }}" value="{{ stat.url | default('') }}" class="w-full p-2 border rounded">
+                                </div>
+                                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Statistic</button>
+                            </div>
+                        {% endfor %}
+                        <div id="statistics-new-statistics" class="mb-4"></div>
+                        <button type="button" onclick="addNewStatistic('statistics')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Statistic</button>
+                        <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Statistics</button>
+                        <button type="button" onclick="toggleEdit('statistics')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                    </form>
+                </div>
+            </section>
+        {% else %}
+            <section class="container mx-auto px-4 mt-4">
+                <div class="bg-card rounded-card p-6 border border-border">
+                    <h2 class="text-xl font-semibold text-primary mb-4">Admin Access Required</h2>
+                    <p class="text-text mb-4">You must be logged in as an admin to view this page.</p>
+                    {% if actor %}
+                        <p class="text-text mb-4">You are logged in as <span class="font-semibold">{{ actor.name }}</span> but don't have admin privileges.</p>
+                    {% endif %}
+                    <div class="flex gap-4">
+                        <a href="/login" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Login</a>
+                        <a href="/" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Return Home</a>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+    </main>
+    <footer class="bg-gray-50 border-t border-gray-100 py-8">
+        <div class="container mx-auto px-4">
+            <div id="display-footer" class="display-section flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <div class="w-8 h-8 flex items-center justify-center mr-2">
+                        <i class="{{ content.footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-primary">
+                        {{ content.footer.text | safe }}
+                        {% if content.footer.text_url and content.footer.text_url_text %}
+                            <a href="{{ content.footer.text_url }}" class="text-accent hover:text-primary">{{ content.footer.text_url_text }}</a>
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    {% for link in content.footer.links | default([]) %}
+                        <a href="{{ link.url }}" class="text-accent hover:text-primary mr-4">{{ link.text }}</a>
+                    {% endfor %}
+                </div>
+                <button onclick="toggleEdit('footer')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mt-4 md:mt-0">Edit Footer</button>
+            </div>
+            <div id="edit-footer" class="edit-section">
                 <form action="/admin/update" method="post">
                     <input type="hidden" name="section" value="footer">
                     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Text:</label>
+                        <label class="block text-text mb-2">Footer Text:</label>
                         <textarea name="text" rows="3" class="w-full p-2 border rounded">{{ content.footer.text | default('') }}</textarea>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Text URL:</label>
+                        <label class="block text-text mb-2">URL:</label>
                         <input type="text" name="text_url" value="{{ content.footer.text_url | default('') }}" class="w-full p-2 border rounded">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Text URL Text:</label>
+                        <label class="block text-text mb-2">URL Text:</label>
                         <input type="text" name="text_url_text" value="{{ content.footer.text_url_text | default('') }}" class="w-full p-2 border rounded">
                     </div>
                     {% for link in content.footer.links | default([]) %}
@@ -262,52 +470,15 @@
                                 <label class="block text-text mb-2">Text:</label>
                                 <input type="text" name="link_text_{{ loop.index0 }}" value="{{ link.text | default('') }}" class="w-full p-2 border rounded">
                             </div>
+                            <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Link</button>
                         </div>
                     {% endfor %}
-                    <div class="mb-6 p-4 border border-dashed rounded">
-                        <h4 class="text-md font-semibold text-primary mb-3">New Link</h4>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">URL:</label>
-                            <input type="text" name="link_url_{{ (content.footer.links | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Text:</label>
-                            <input type="text" name="link_text_{{ (content.footer.links | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                    </div>
+                    <div id="footer-new-links" class="mb-4"></div>
+                    <button type="button" onclick="addNewFooterText('footer')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Text</button>
+                    <button type="button" onclick="addNewFooterLink('footer')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Link</button>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Footer</button>
+                    <button type="button" onclick="toggleEdit('footer')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
                 </form>
-            </section>
-        {% else %}
-            <div class="bg-card rounded-card p-6 border border-border">
-                <h2 class="text-xl font-semibold text-primary mb-4">Admin Access Required</h2>
-                <p class="text-text mb-4">You must be logged in as an admin to view this page.</p>
-                {% if actor %}
-                    <p class="text-text mb-4">You are logged in as <span class="font-semibold">{{ actor.name }}</span> but don't have admin privileges.</p>
-                {% endif %}
-                <div class="flex gap-4">
-                    <a href="/login" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Login</a>
-                    <a href="/" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Return Home</a>
-                </div>
-            </div>
-        {% endif %}
-    </main>
-    <footer class="bg-gray-50 border-t border-gray-100 py-8">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center mb-4 md:mb-0">
-                    <div class="w-8 h-8 flex items-center justify-center mr-2">
-                        <i class="ri-earth-line text-primary ri-lg" aria-hidden="true"></i>
-                    </div>
-                    <p class="text-primary">
-                        Made with <span class="text-red-500" aria-label="love">❤</span> by 
-                        <a href="https://envirodatagov.org" rel="nofollow" class="text-accent hover:text-primary">EDGI</a> and 
-                        <a href="https://screening-tools.com/" rel="nofollow" class="text-accent hover:text-primary">Public Environmental Data Partners</a>.
-                    </p>
-                </div>
-                <div>
-                    <a href="https://opendatacommons.org/licenses/odbl/" class="text-accent hover:text-primary">Data licensed under ODbL</a>
-                </div>
             </div>
         </div>
     </footer>
