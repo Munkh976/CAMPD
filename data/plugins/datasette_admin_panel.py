@@ -8,6 +8,7 @@ from datasette.utils.asgi import Response
 from email.parser import BytesParser
 from email.policy import default
 import bleach
+import re
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -18,6 +19,17 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 def sanitize_text(text):
     """Sanitize text by stripping HTML tags while preserving safe characters."""
     return bleach.clean(text, tags=[], strip=True)
+
+def parse_markdown_links(text):
+    """Parse markdown-like links [text](url) into HTML <a> tags and split into paragraphs."""
+    paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
+    parsed_paragraphs = []
+    link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
+    for paragraph in paragraphs:
+        # Replace [text](url) with <a href="url">text</a>
+        parsed = link_pattern.sub(lambda m: f'<a href="{sanitize_text(m.group(2))}" class="text-accent hover:text-primary">{sanitize_text(m.group(1))}</a>', paragraph)
+        parsed_paragraphs.append(parsed)
+    return parsed_paragraphs
 
 async def login_page(datasette, request):
     logger.debug(f"Login request: method={request.method}, scope={request.scope}")
@@ -165,6 +177,12 @@ async def admin_page(datasette, request):
     sections = await db.execute('SELECT section, content FROM admin_content')
     content = {row['section']: json.loads(row['content']) for row in sections}
 
+    # Parse markdown links for info and footer
+    if 'info' in content and 'content' in content['info']:
+        content['info']['paragraphs'] = parse_markdown_links(content['info']['content'])
+    if 'footer' in content and 'content' in content['footer']:
+        content['footer']['paragraphs'] = parse_markdown_links(content['footer']['content'])
+
     return Response.html(
         await datasette.render_template(
             'admin.html',
@@ -302,17 +320,11 @@ async def update_content(datasette, request):
         section = post_vars.get('section')
         logger.debug(f"Updating section: {section}")
 
-    if section == 'info':
-        paragraphs = []
-        i = 0
-        while f'paragraph_{i}' in post_vars:
-            paragraphs.append({
-                'text': sanitize_text(post_vars[f'paragraph_{i}']),
-                'url': sanitize_text(post_vars.get(f'paragraph_url_{i}', '')),
-                'url_text': sanitize_text(post_vars.get(f'paragraph_url_text_{i}', ''))
-            })
-            i += 1
-        content = {'description': sanitize_text(post_vars.get('description', '')), 'paragraphs': paragraphs}
+    if section == 'title':
+        content = {'content': sanitize_text(post_vars.get('content', ''))}
+
+    elif section == 'info':
+        content = {'content': sanitize_text(post_vars.get('content', ''))}
 
     elif section == 'feature_cards':
         cards = []
@@ -344,23 +356,13 @@ async def update_content(datasette, request):
         content = stats
 
     elif section == 'footer':
-        links = []
-        i = 0
-        while f'link_url_{i}' in post_vars or f'link_text_{i}' in post_vars:
-            links.append({
-                'url': sanitize_text(post_vars.get(f'link_url_{i}', '')),
-                'text': sanitize_text(post_vars[f'link_text_{i}'])
-            })
-            i += 1
         content = {
-            'icon': 'ri-earth-line',  # Static icon
-            'text': sanitize_text(post_vars.get('text', '')),
-            'text_url': sanitize_text(post_vars.get('text_url', '')),
-            'text_url_text': sanitize_text(post_vars.get('text_url_text', '')),
-            'links': links
+            'content': sanitize_text(post_vars.get('content', '')),
+            'odbl_text': sanitize_text(post_vars.get('odbl_text', 'Data licensed under ODbL')),
+            'odbl_url': sanitize_text(post_vars.get('odbl_url', 'https://opendatacommons.org/licenses/odbl/'))
         }
 
-    elif section != 'header_image':
+    else:
         logger.error("Invalid section: %s", section)
         return Response.json({'error': 'Invalid section'}, status=400)
 
@@ -379,7 +381,13 @@ async def index_page(datasette, request):
         row = result.first()
         if row:
             try:
-                return json.loads(row["content"])
+                content = json.loads(row["content"])
+                # Parse markdown links for info and footer
+                if section_name == "info" and 'content' in content:
+                    content['paragraphs'] = parse_markdown_links(content['content'])
+                if section_name == "footer" and 'content' in content:
+                    content['paragraphs'] = parse_markdown_links(content['content'])
+                return content
             except json.JSONDecodeError as e:
                 logger.error(f"JSON decode error for section {section_name}: {str(e)}")
                 return {}
@@ -391,6 +399,7 @@ async def index_page(datasette, request):
     feature_cards = await get_section("feature_cards")
     statistics = await get_section("statistics")
     footer = await get_section("footer")
+    title = await get_section("title")
 
     if isinstance(statistics, str):
         try:
@@ -417,26 +426,27 @@ async def index_page(datasette, request):
             value = "N/A"
         statistics_data.append({"label": label, "value": value, "url": url})
 
-    logger.debug(f"Rendering index with data: header_image={header_image}, info={info}, feature_cards={feature_cards}, statistics={statistics_data}, footer={footer}")
+    logger.debug(f"Rendering index with data: header_image={header_image}, info={info}, feature_cards={feature_cards}, statistics={statistics_data}, footer={footer}, title={title}")
 
     return Response.html(
         await datasette.render_template(
             "index.html",
             {
-                "page_title": "CAMPD (Clean Air Markets Program Data) | EDGI",
+                "page_title": title.get('content', "EPA Clean Air Markets Program Data") + " | EDGI",
                 "header_image": header_image,
                 "info": info,
                 "feature_cards": feature_cards,
                 "statistics": statistics_data,
                 "footer": footer,
-                "metadata": datasette.metadata(),
+                "content": {'title': title},  # Pass title in content for consistency
                 "actor": request.scope.get("actor"),
                 "debug": {
                     "header_image": header_image,
                     "info": info,
                     "feature_cards": feature_cards,
                     "statistics": statistics_data,
-                    "footer": footer
+                    "footer": footer,
+                    "title": title
                 }
             },
             request=request

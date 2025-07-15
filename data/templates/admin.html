@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.9">
-    <title>Admin - {{ metadata.title }}</title>
+    <title>Admin - {{ content.title.content | default("EPA CAMPD") }}</title>
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="/static/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
@@ -89,33 +89,6 @@
             }
         }
 
-        function addNewParagraph(sectionId, includeLink = true) {
-            const container = document.getElementById(`${sectionId}-new-paragraphs`);
-            const existingFields = container.querySelectorAll('.dynamic-field').length;
-            const index = existingFields + (document.querySelectorAll(`[name^=paragraph_][name$="]"]`).length);
-            const div = document.createElement('div');
-            div.className = 'dynamic-field';
-            div.innerHTML = `
-                <h4 class="text-md font-semibold text-primary mb-3">New Paragraph ${index + 1}</h4>
-                <div class="mb-4">
-                    <label class="block text-text mb-2">Text:</label>
-                    <textarea name="paragraph_${index}" rows="3" class="w-full p-2 border rounded"></textarea>
-                </div>
-                ${includeLink ? `
-                <div class="mb-4">
-                    <label class="block text-text mb-2">URL:</label>
-                    <input type="text" name="paragraph_url_${index}" class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-text mb-2">URL Text:</label>
-                    <input type="text" name="paragraph_url_text_${index}" class="w-full p-2 border rounded">
-                </div>
-                ` : ''}
-                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Paragraph</button>
-            `;
-            container.appendChild(div);
-        }
-
         function addNewCard(sectionId) {
             const container = document.getElementById(`${sectionId}-new-cards`);
             const existingFields = container.querySelectorAll('.dynamic-field').length;
@@ -167,44 +140,6 @@
             container.appendChild(div);
         }
 
-        function addNewFooterText(sectionId) {
-            const container = document.getElementById(`${sectionId}-new-links`);
-            const existingFields = container.querySelectorAll('.dynamic-field').length;
-            const index = existingFields + (document.querySelectorAll(`[name^=link_url_]`).length);
-            const div = document.createElement('div');
-            div.className = 'dynamic-field';
-            div.innerHTML = `
-                <h4 class="text-md font-semibold text-primary mb-3">New Text ${index + 1}</h4>
-                <div class="mb-4">
-                    <label class="block text-text mb-2">Text:</label>
-                    <input type="text" name="link_text_${index}" class="w-full p-2 border rounded">
-                </div>
-                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Text</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function addNewFooterLink(sectionId) {
-            const container = document.getElementById(`${sectionId}-new-links`);
-            const existingFields = container.querySelectorAll('.dynamic-field').length;
-            const index = existingFields + (document.querySelectorAll(`[name^=link_url_]`).length);
-            const div = document.createElement('div');
-            div.className = 'dynamic-field';
-            div.innerHTML = `
-                <h4 class="text-md font-semibold text-primary mb-3">New Link ${index + 1}</h4>
-                <div class="mb-4">
-                    <label class="block text-text mb-2">URL:</label>
-                    <input type="text" name="link_url_${index}" class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-text mb-2">Text:</label>
-                    <input type="text" name="link_text_${index}" class="w-full p-2 border rounded">
-                </div>
-                <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Link</button>
-            `;
-            container.appendChild(div);
-        }
-
         function removeField(element) {
             element.parentNode.remove();
         }
@@ -217,7 +152,7 @@
                 <div class="w-10 h-10 flex items-center justify-center mr-3">
                     <i class="ri-earth-line text-white ri-2x" aria-hidden="true"></i>
                 </div>
-                <div class="text-xl font-semibold">Admin - {{ metadata.title }}</div>
+                <div class="text-xl font-semibold">Admin - {{ content.title.content | default("EPA CAMPD") }}</div>
             </div>
             <nav>
                 <a href="/" class="text-white hover:text-accent mr-4">Home</a>
@@ -232,6 +167,27 @@
     </header>
     <main class="flex-grow pt-20 pb-6">
         {% if actor and actor.id in ["admin", "admin1", "admin2"] %}
+            <section class="container mx-auto px-4 mt-4">
+                <div class="bg-card rounded-card p-6 border border-border">
+                    <h2 class="text-2xl font-semibold text-primary mb-4">Site Title</h2>
+                    <div id="display-title" class="display-section">
+                        <p class="text-text mb-4">{{ content.title.content | default("EPA Clean Air Markets Program Data") }}</p>
+                        <button onclick="toggleEdit('title')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Title</button>
+                    </div>
+                    <div id="edit-title" class="edit-section">
+                        <form action="/admin/update" method="post">
+                            <input type="hidden" name="section" value="title">
+                            <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+                            <div class="mb-4">
+                                <label class="block text-text mb-2">Title:</label>
+                                <input type="text" name="content" value="{{ content.title.content | default('') }}" class="w-full p-2 border rounded">
+                            </div>
+                            <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Title</button>
+                            <button type="button" onclick="toggleEdit('title')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
             <section class="mt-4">
                 <div class="map-container relative">
                     <img src="{{ content.header_image.image_url | default('/static/header.jpg') }}" alt="{{ content.header_image.alt_text | default('CAMPD Header by J. Alex Lang') }}" class="map-image">
@@ -279,16 +235,10 @@
             </section>
             <section class="container mx-auto px-4 mt-4">
                 <div class="bg-card rounded-card p-6 border border-border">
-                    <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default("EPA CAMPD") }}</h2>
+                    <h2 class="text-2xl font-semibold text-primary mb-4">About {{ content.title.content | default("EPA CAMPD") }}</h2>
                     <div id="display-info" class="display-section">
-                        <p class="text-text mb-4">{{ content.info.description | default("The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule.") }}</p>
-                        {% for paragraph in content.info.paragraphs | default([]) %}
-                            <p class="text-text mb-4">
-                                {{ paragraph.text | safe }}
-                                {% if paragraph.url and paragraph.url_text %}
-                                    <a href="{{ paragraph.url }}" class="text-accent hover:text-primary">{{ paragraph.url_text }}</a>
-                                {% endif %}
-                            </p>
+                        {% for paragraph in content.info.paragraphs | default(["The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule."]) %}
+                            <p class="text-text mb-4">{{ paragraph | safe }}</p>
                         {% endfor %}
                         <button onclick="toggleEdit('info')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Info</button>
                     </div>
@@ -297,30 +247,9 @@
                             <input type="hidden" name="section" value="info">
                             <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                             <div class="mb-4">
-                                <label class="block text-text mb-2">Description:</label>
-                                <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
+                                <label class="block text-text mb-2">Content (press Enter for new paragraphs, use [text](url) for links):</label>
+                                <textarea name="content" rows="6" class="w-full p-2 border rounded">{{ content.info.content | default('') }}</textarea>
                             </div>
-                            {% for paragraph in content.info.paragraphs | default([]) %}
-                                <div class="mb-6 p-4 border rounded">
-                                    <h4 class="text-md font-semibold text-primary mb-3">Paragraph {{ loop.index }}:</h4>
-                                    <div class="mb-4">
-                                        <label class="block text-text mb-2">Text:</label>
-                                        <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph.text | default('') }}</textarea>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="block text-text mb-2">URL:</label>
-                                        <input type="text" name="paragraph_url_{{ loop.index0 }}" value="{{ paragraph.url | default('') }}" class="w-full p-2 border rounded">
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="block text-text mb-2">URL Text:</label>
-                                        <input type="text" name="paragraph_url_text_{{ loop.index0 }}" value="{{ paragraph.url_text | default('') }}" class="w-full p-2 border rounded">
-                                    </div>
-                                    <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Paragraph</button>
-                                </div>
-                            {% endfor %}
-                            <div id="info-new-paragraphs" class="mb-4"></div>
-                            <button type="button" onclick="addNewParagraph('info', false)" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Text</button>
-                            <button type="button" onclick="addNewParagraph('info', true)" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Link</button>
                             <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
                             <button type="button" onclick="toggleEdit('info')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
                         </form>
@@ -426,20 +355,14 @@
         <div class="container mx-auto px-4">
             <div id="display-footer" class="display-section flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center mb-4 md:mb-0">
-                    <div class="w-8 h-8 flex items-center justify-center mr-2">
-                        <i class="{{ content.footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    <div class="text-primary">
+                        {% for paragraph in content.footer.paragraphs | default([]) %}
+                            <p class="mb-4">{{ paragraph | safe }}</p>
+                        {% endfor %}
                     </div>
-                    <p class="text-primary">
-                        {{ content.footer.text | safe }}
-                        {% if content.footer.text_url and content.footer.text_url_text %}
-                            <a href="{{ content.footer.text_url }}" class="text-accent hover:text-primary">{{ content.footer.text_url_text }}</a>
-                        {% endif %}
-                    </p>
                 </div>
                 <div>
-                    {% for link in content.footer.links | default([]) %}
-                        <a href="{{ link.url }}" class="text-accent hover:text-primary mr-4">{{ link.text }}</a>
-                    {% endfor %}
+                    <a href="{{ content.footer.odbl_url | default('https://opendatacommons.org/licenses/odbl/') }}" class="text-accent hover:text-primary">{{ content.footer.odbl_text | default('Data licensed under ODbL') }}</a>
                 </div>
                 <button onclick="toggleEdit('footer')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mt-4 md:mt-0">Edit Footer</button>
             </div>
@@ -448,34 +371,17 @@
                     <input type="hidden" name="section" value="footer">
                     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Footer Text:</label>
-                        <textarea name="text" rows="3" class="w-full p-2 border rounded">{{ content.footer.text | default('') }}</textarea>
+                        <label class="block text-text mb-2">Content (press Enter for new paragraphs, use [text](url) for links):</label>
+                        <textarea name="content" rows="6" class="w-full p-2 border rounded">{{ content.footer.content | default('') }}</textarea>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-text mb-2">URL:</label>
-                        <input type="text" name="text_url" value="{{ content.footer.text_url | default('') }}" class="w-full p-2 border rounded">
+                        <label class="block text-text mb-2">License Link Text:</label>
+                        <input type="text" name="odbl_text" value="{{ content.footer.odbl_text | default('Data licensed under ODbL') }}" class="w-full p-2 border rounded">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-text mb-2">URL Text:</label>
-                        <input type="text" name="text_url_text" value="{{ content.footer.text_url_text | default('') }}" class="w-full p-2 border rounded">
+                        <label class="block text-text mb-2">License Link URL:</label>
+                        <input type="text" name="odbl_url" value="{{ content.footer.odbl_url | default('https://opendatacommons.org/licenses/odbl/') }}" class="w-full p-2 border rounded">
                     </div>
-                    {% for link in content.footer.links | default([]) %}
-                        <div class="mb-6 p-4 border rounded">
-                            <h4 class="text-md font-semibold text-primary mb-3">Link {{ loop.index }}:</h4>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">URL:</label>
-                                <input type="text" name="link_url_{{ loop.index0 }}" value="{{ link.url | default('') }}" class="w-full p-2 border rounded">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">Text:</label>
-                                <input type="text" name="link_text_{{ loop.index0 }}" value="{{ link.text | default('') }}" class="w-full p-2 border rounded">
-                            </div>
-                            <button type="button" onclick="removeField(this)" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Remove Link</button>
-                        </div>
-                    {% endfor %}
-                    <div id="footer-new-links" class="mb-4"></div>
-                    <button type="button" onclick="addNewFooterText('footer')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Text</button>
-                    <button type="button" onclick="addNewFooterLink('footer')" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition mb-2">Add New Link</button>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Footer</button>
                     <button type="button" onclick="toggleEdit('footer')" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
                 </form>

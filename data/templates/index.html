@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.9">
-    <title>{{ page_title | default("EPA Clean Air Markets Program Data | EDGI") }}</title>
+    <title>{{ content.title.content | default("EPA Clean Air Markets Program Data") }} | EDGI</title>
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="/static/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
@@ -17,7 +17,7 @@
                 <div class="w-10 h-10 flex items-center justify-center mr-3">
                     <i class="ri-earth-line text-white ri-2x" aria-hidden="true"></i>
                 </div>
-                <div class="text-xl font-semibold">{{ metadata.title | default("EPA Clean Air Markets Program Data") }}</div>
+                <div class="text-xl font-semibold">{{ content.title.content | default("EPA Clean Air Markets Program Data") }}</div>
             </div>
             <nav>
                 <a href="/" class="text-white hover:text-accent mr-4">Home</a>
@@ -46,15 +46,9 @@
         </section>
         <section class="container mx-auto px-4 mt-4">
             <div class="bg-card rounded-card p-6 border border-border">
-                <h2 class="text-2xl font-semibold text-primary mb-4">About {{ metadata.title | default("EPA CAMPD") }}</h2>
-                <p class="text-text mb-4">{{ info.description | default("The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule.") }}</p>
-                {% for paragraph in info.paragraphs | default([]) %}
-                    <p class="text-text mb-4">
-                        {{ paragraph.text | safe }}
-                        {% if paragraph.url and paragraph.url_text %}
-                            <a href="{{ paragraph.url }}" class="text-accent hover:text-primary">{{ paragraph.url_text }}</a>
-                        {% endif %}
-                    </p>
+                <h2 class="text-2xl font-semibold text-primary mb-4">About {{ content.title.content | default("EPA CAMPD") }}</h2>
+                {% for paragraph in info.paragraphs | default(["The EPA’s Clean Air Markets Program Data (CAMPD) provides emissions, compliance, allowance, and facility attributes data collected under programs like the Acid Rain Program and Cross-State Air Pollution Rule."]) %}
+                    <p class="text-text mb-4">{{ paragraph | safe }}</p>
                 {% endfor %}
                 <div class="mt-4 flex flex-col md:flex-row gap-6">
                     {% for card in feature_cards | default([]) %}
@@ -83,20 +77,14 @@
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center mb-4 md:mb-0">
-                    <div class="w-8 h-8 flex items-center justify-center mr-2">
-                        <i class="{{ footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    <div class="text-primary">
+                        {% for paragraph in footer.paragraphs | default([]) %}
+                            <p class="mb-4">{{ paragraph | safe }}</p>
+                        {% endfor %}
                     </div>
-                    <p class="text-primary">
-                        {{ footer.text | safe }}
-                        {% if footer.text_url and footer.text_url_text %}
-                            <a href="{{ footer.text_url }}" class="text-accent hover:text-primary">{{ footer.text_url_text }}</a>
-                        {% endif %}
-                    </p>
                 </div>
                 <div>
-                    {% for link in footer.links | default([]) %}
-                        <a href="{{ link.url }}" class="text-accent hover:text-primary mr-4">{{ link.text }}</a>
-                    {% endfor %}
+                    <a href="{{ footer.odbl_url | default('https://opendatacommons.org/licenses/odbl/') }}" class="text-accent hover:text-primary">{{ footer.odbl_text | default('Data licensed under ODbL') }}</a>
                 </div>
             </div>
         </div>
