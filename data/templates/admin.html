@@ -9,6 +9,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" href="/static/favicon.ico">
+    <style>
+        /* Hide default file input button and style the label */
+        .custom-file-input {
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-file-input input[type="file"] {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0;
+        }
+        .custom-file-input label {
+            display: inline-block;
+            background-color: #2b6cb0; /* bg-accent */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .custom-file-input label:hover {
+            background-color: #1e4e8c; /* bg-accent-dark */
+        }
+    </style>
 </head>
 <body class="bg-background">
     <header class="fixed top-0 left-0 right-0 z-50 bg-header text-white shadow-md">
@@ -59,7 +85,10 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-text mb-2">Image File (.jpg or .png, max 5MB):</label>
-                        <input type="file" name="image" accept=".jpg,.png" class="w-full p-2 border rounded">
+                        <div class="custom-file-input">
+                            <input type="file" name="image" id="image" accept=".jpg,.png">
+                            <label for="image">Choose picture</label>
+                        </div>
                     </div>
                     <div class="mb-4">
                         <label class="block text-text mb-2">Alt Text:</label>
@@ -87,14 +116,36 @@
                         <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ content.info.description | default('') }}</textarea>
                     </div>
                     {% for paragraph in content.info.paragraphs | default([]) %}
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">Paragraph {{ loop.index }}:</label>
-                        <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph }}</textarea>
+                    <div class="mb-6 p-4 border rounded">
+                        <h4 class="text-md font-semibold text-primary mb-3">Paragraph {{ loop.index }}:</h4>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Text:</label>
+                            <textarea name="paragraph_{{ loop.index0 }}" rows="3" class="w-full p-2 border rounded">{{ paragraph.text | default('') }}</textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL:</label>
+                            <input type="text" name="paragraph_url_{{ loop.index0 }}" value="{{ paragraph.url | default('') }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL Text:</label>
+                            <input type="text" name="paragraph_url_text_{{ loop.index0 }}" value="{{ paragraph.url_text | default('') }}" class="w-full p-2 border rounded">
+                        </div>
                     </div>
                     {% endfor %}
-                    <div class="mb-4">
-                        <label class="block text-text mb-2">New Paragraph:</label>
-                        <textarea name="paragraph_{{ (content.info.paragraphs | default([]) | length) }}" rows="3" class="w-full p-2 border rounded"></textarea>
+                    <div class="mb-6 p-4 border border-dashed rounded">
+                        <h4 class="text-md font-semibold text-primary mb-3">New Paragraph</h4>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">Text:</label>
+                            <textarea name="paragraph_{{ (content.info.paragraphs | default([]) | length) }}" rows="3" class="w-full p-2 border rounded"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL:</label>
+                            <input type="text" name="paragraph_url_{{ (content.info.paragraphs | default([]) | length) }}" class="w-full p-2 border rounded">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-text mb-2">URL Text:</label>
+                            <input type="text" name="paragraph_url_text_{{ (content.info.paragraphs | default([]) | length) }}" class="w-full p-2 border rounded">
+                        </div>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Info</button>
                 </form>
@@ -120,11 +171,6 @@
                                 <label class="block text-text mb-2">URL:</label>
                                 <input type="text" name="card_url_{{ loop.index0 }}" value="{{ card.url | default('') }}" class="w-full p-2 border rounded">
                             </div>
-                            <div class="mb-4">
-                                <label class="block text-text mb-2">Icon (RemixIcon class):</label>
-                                <input type="text" name="card_icon_{{ loop.index0 }}" value="{{ card.icon | default('') }}" class="w-full p-2 border rounded">
-                                <p class="text-sm text-textlight mt-1">Example: ri-database-2-line</p>
-                            </div>
                         </div>
                     {% endfor %}
                     <div class="mb-6 p-4 border border-dashed rounded">
@@ -140,10 +186,6 @@
                         <div class="mb-4">
                             <label class="block text-text mb-2">URL:</label>
                             <input type="text" name="card_url_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-text mb-2">Icon (RemixIcon class):</label>
-                            <input type="text" name="card_icon_{{ (content.feature_cards | default([]) | length) }}" class="w-full p-2 border rounded">
                         </div>
                     </div>
                     <button type="submit" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Update Feature Cards</button>
@@ -198,13 +240,16 @@
                     <input type="hidden" name="section" value="footer">
                     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
                     <div class="mb-4">
-                        <label class="block text-text mb-2">Icon (RemixIcon class):</label>
-                        <input type="text" name="icon" value="{{ content.footer.icon | default('') }}" class="w-full p-2 border rounded">
-                        <p class="text-sm text-textlight mt-1">Example: ri-earth-line</p>
-                    </div>
-                    <div class="mb-4">
                         <label class="block text-text mb-2">Text:</label>
                         <textarea name="text" rows="3" class="w-full p-2 border rounded">{{ content.footer.text | default('') }}</textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Text URL:</label>
+                        <input type="text" name="text_url" value="{{ content.footer.text_url | default('') }}" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-text mb-2">Text URL Text:</label>
+                        <input type="text" name="text_url_text" value="{{ content.footer.text_url_text | default('') }}" class="w-full p-2 border rounded">
                     </div>
                     {% for link in content.footer.links | default([]) %}
                         <div class="mb-6 p-4 border rounded">

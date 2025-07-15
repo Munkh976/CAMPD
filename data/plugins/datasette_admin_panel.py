@@ -6,6 +6,8 @@ from datetime import datetime
 from datasette import hookimpl
 from datasette.utils.asgi import Response
 from markupsafe import escape
+from email.parser import BytesParser
+from email.policy import default
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,9 +33,7 @@ async def login_page(datasette, request):
                 logger.debug("Login successful for user: %s", username)
                 response = Response.redirect("/admin")
                 actor_data = {"id": username, "name": f"User {username}"}
-                # Set ds_actor cookie without extra quotes
                 response.set_cookie("ds_actor", json.dumps(actor_data, ensure_ascii=False), httponly=True)
-                # Update request scope to include actor
                 request.scope["actor"] = actor_data
                 return response
             else:
@@ -132,10 +132,8 @@ async def admin_page(datasette, request):
     cookies = {k.decode('utf-8'): v.decode('utf-8') for k, v in request.scope.get('headers', []) if k.decode('utf-8') == 'cookie'}
     logger.debug(f"Admin Cookies: {cookies}")
     
-    # Try to get actor from request.scope
     actor = request.scope.get("actor")
     if not actor:
-        # Fallback to parsing ds_actor cookie manually
         cookie_string = cookies.get("cookie", "")
         ds_actor_cookie = None
         for cookie in cookie_string.split("; "):
@@ -144,14 +142,11 @@ async def admin_page(datasette, request):
                 break
         if ds_actor_cookie:
             try:
-                # Remove outer quotes if present
                 if ds_actor_cookie.startswith('"') and ds_actor_cookie.endswith('"'):
                     ds_actor_cookie = ds_actor_cookie[1:-1]
-                # Clean up escaped characters
                 ds_actor_cookie = ds_actor_cookie.replace('\\054', ',').replace('\\"', '"')
                 actor = json.loads(ds_actor_cookie)
                 logger.debug(f"Parsed actor from ds_actor cookie: {actor}")
-                # Update request scope to ensure actor persists
                 request.scope["actor"] = actor
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse ds_actor cookie: {e}, cookie value: {ds_actor_cookie}")
@@ -207,41 +202,100 @@ async def update_content(datasette, request):
         return Response.redirect("/login")
 
     db = datasette.get_database('CAMPD')
-    post_vars = await request.post_vars()
-    section = post_vars.get('section')
-    logger.debug(f"Updating section: {section}")
+    section = None
+    post_vars = {}
 
-    if section == 'header_image':
-        if 'image' in request.files:
-            file = request.files['image']
-            if file.size > MAX_FILE_SIZE:
-                logger.error("File exceeds 5MB limit")
-                return Response.json({'error': 'File exceeds 5MB limit'}, status=400)
-            ext = Path(file.filename).suffix.lower()
-            if ext not in ALLOWED_EXTENSIONS:
-                logger.error("Invalid file extension: %s", ext)
-                return Response.json({'error': 'Only .jpg and .png files allowed'}, status=400)
-            upload_dir = Path("static/uploads")
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
-            file_path = upload_dir / filename
-            with open(file_path, 'wb') as f:
-                f.write(file.file.read())
-            content = {
-                'image_url': f'/static/uploads/{filename}',
-                'alt_text': escape(post_vars.get('alt_text', '')),
-                'credit_url': escape(post_vars.get('credit_url', '')),
-                'credit_text': escape(post_vars.get('credit_text', ''))
-            }
-        else:
-            logger.error("No image file provided")
-            return Response.json({'error': 'No image file provided'}, status=400)
+    # Handle multipart form data for header_image
+    if 'multipart/form-data' in request.headers.get('content-type', '').lower():
+        try:
+            body = await request.post_body()
+            content_type = request.headers.get('content-type', '')
+            # Extract boundary manually from Content-Type header
+            boundary = None
+            if 'boundary=' in content_type.lower():
+                boundary = content_type.split('boundary=')[-1].split(';')[0].strip().encode('utf-8')
+            if not boundary:
+                logger.error("No boundary found in Content-Type header")
+                return Response.json({'error': 'Invalid multipart form data: missing boundary'}, status=400)
 
-    elif section == 'info':
+            # Parse multipart form data
+            headers = {k.decode('utf-8'): v.decode('utf-8') for k, v in request.scope.get('headers', [])}
+            headers['content-type'] = content_type
+            msg = BytesParser(policy=default).parsebytes(b'\r\n'.join([f'{k}: {v}'.encode('utf-8') for k, v in headers.items()]) + b'\r\n\r\n' + body)
+            
+            forms = {}
+            files = {}
+
+            for part in msg.iter_parts():
+                if not part.is_multipart():
+                    content_disposition = part.get('Content-Disposition', '')
+                    if content_disposition:
+                        disposition_params = {}
+                        for param in content_disposition.split(';'):
+                            param = param.strip()
+                            if '=' in param:
+                                key, value = param.split('=', 1)
+                                disposition_params[key.strip()] = value.strip().strip('"')
+                        field_name = disposition_params.get('name')
+                        filename = disposition_params.get('filename')
+                        if field_name:
+                            if filename:
+                                files[field_name] = {
+                                    'filename': filename,
+                                    'content': part.get_payload(decode=True)
+                                }
+                            else:
+                                forms[field_name] = [part.get_payload(decode=True).decode('utf-8')]
+            
+            section = forms.get('section', [''])[0]
+            logger.debug(f"Updating section: {section}")
+
+            if section == 'header_image':
+                if 'image' in files:
+                    file = files['image']
+                    if len(file['content']) > MAX_FILE_SIZE:
+                        logger.error("File exceeds 5MB limit")
+                        return Response.json({'error': 'File exceeds 5MB limit'}, status=400)
+                    ext = Path(file['filename']).suffix.lower()
+                    if ext not in ALLOWED_EXTENSIONS:
+                        logger.error("Invalid file extension: %s", ext)
+                        return Response.json({'error': 'Only .jpg and .png files allowed'}, status=400)
+                    upload_dir = Path("static/uploads")
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+                    file_path = upload_dir / filename
+                    with open(file_path, 'wb') as f:
+                        f.write(file['content'])
+                    content = {
+                        'image_url': f'/static/uploads/{filename}',
+                        'alt_text': escape(forms.get('alt_text', [''])[0]),
+                        'credit_url': escape(forms.get('credit_url', [''])[0]),
+                        'credit_text': escape(forms.get('credit_text', [''])[0])
+                    }
+                else:
+                    logger.error("No image file provided")
+                    return Response.json({'error': 'No image file provided'}, status=400)
+            else:
+                # For non-file sections, use form data
+                post_vars = {k: v[0] for k, v in forms.items()}
+        except Exception as e:
+            logger.error(f"Multipart form parsing error: {str(e)}")
+            return Response.json({'error': f"Form parsing error: {str(e)}"}, status=400)
+    else:
+        # Handle regular form data for other sections
+        post_vars = await request.post_vars()
+        section = post_vars.get('section')
+        logger.debug(f"Updating section: {section}")
+
+    if section == 'info':
         paragraphs = []
         i = 0
         while f'paragraph_{i}' in post_vars:
-            paragraphs.append(escape(post_vars[f'paragraph_{i}']))
+            paragraphs.append({
+                'text': escape(post_vars[f'paragraph_{i}']),
+                'url': escape(post_vars.get(f'paragraph_url_{i}', '')),
+                'url_text': escape(post_vars.get(f'paragraph_url_text_{i}', ''))
+            })
             i += 1
         content = {'description': escape(post_vars.get('description', '')), 'paragraphs': paragraphs}
 
@@ -253,7 +307,7 @@ async def update_content(datasette, request):
                 'title': escape(post_vars[f'card_title_{i}']),
                 'description': escape(post_vars[f'card_description_{i}']),
                 'url': escape(post_vars[f'card_url_{i}']),
-                'icon': escape(post_vars[f'card_icon_{i}'])
+                'icon': 'ri-bar-chart-line'  # Static icon
             })
             i += 1
         content = cards
@@ -284,12 +338,14 @@ async def update_content(datasette, request):
             })
             i += 1
         content = {
-            'icon': escape(post_vars.get('icon', '')),
+            'icon': 'ri-earth-line',  # Static icon
             'text': escape(post_vars.get('text', '')),
+            'text_url': escape(post_vars.get('text_url', '')),
+            'text_url_text': escape(post_vars.get('text_url_text', '')),
             'links': links
         }
 
-    else:
+    elif section != 'header_image':
         logger.error("Invalid section: %s", section)
         return Response.json({'error': 'Invalid section'}, status=400)
 
