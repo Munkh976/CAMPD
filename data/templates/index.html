@@ -19,26 +19,16 @@
                 </div>
                 <div class="text-xl font-semibold">{{ content.title.content | default("EPA Clean Air Markets Program Data") }}</div>
             </div>
-            <nav>
-                <a href="/" class="text-white hover:text-accent mr-4">Home</a>
-                {% if actor %}
-                    <a href="/admin" class="text-white hover:text-accent mr-4">Admin</a>
-                    <a href="/logout" class="text-white hover:text-accent">Logout</a>
-                {% else %}
-                    <a href="/login" class="text-white hover:text-accent mr-4">Login</a>
-                    <a href="/register" class="text-white hover:text-accent">Register</a>
-                {% endif %}
-            </nav>
         </div>
     </header>
     <main class="flex-grow pt-20 pb-6">
         <section class="mt-4">
             <div class="map-container relative">
-                <img src="{{ header_image.image_url | default('/static/header.jpg') }}" alt="{{ header_image.alt_text | default('CAMPD Header by J. Alex Lang') }}" class="map-image">
-                {% if header_image.credit_url %}
+                <img src="{{ content.header_image.image_url | default('/static/header.jpg') }}" alt="{{ content.header_image.alt_text | default('CAMPD Header by J. Alex Lang') }}" class="map-image">
+                {% if content.header_image.credit_url %}
                     <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                        <a href="{{ header_image.credit_url }}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">
-                            {{ header_image.credit_text | default('Image by J. Alex Lang. Used by permission.') }}
+                        <a href="{{ content.header_image.credit_url }}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-accent">
+                            {{ content.header_image.credit_text | default('Image by J. Alex Lang. Used by permission.') }}
                         </a>
                     </div>
                 {% endif %}
@@ -77,6 +67,9 @@
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center mb-4 md:mb-0">
+                    <div class="w-8 h-8 flex items-center justify-center mr-2">
+                        <i class="{{ footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    </div>
                     <div class="text-primary">
                         {% for paragraph in footer.paragraphs | default([]) %}
                             <p class="mb-4">{{ paragraph | safe }}</p>

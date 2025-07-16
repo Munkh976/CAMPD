@@ -67,15 +67,26 @@
             const edit = document.getElementById(`edit-${sectionId}`);
             const form = edit.querySelector('form');
             if (display.style.display === 'none') {
+                // For feature_cards and statistics, reload page to ensure proper rendering
+                if (sectionId === 'feature_cards' || sectionId === 'statistics') {
+                    location.reload();
+                    return;
+                }
+                // Show display section and hide edit section for other sections
                 display.style.display = 'block';
                 edit.style.display = 'none';
-                form.reset(); // Reset form to initial state
-                // Remove dynamically added fields
+                // Reset form and remove dynamically added fields
+                form.reset();
                 const dynamicContainers = edit.querySelectorAll('.dynamic-field');
                 dynamicContainers.forEach(container => container.remove());
             } else {
+                // Hide display section and show edit section
                 display.style.display = 'none';
                 edit.style.display = 'block';
+                // Ensure form is populated with current data
+                form.querySelectorAll('input, textarea').forEach(input => {
+                    input.dispatchEvent(new Event('input')); // Trigger input event to update UI
+                });
             }
         }
 
@@ -154,19 +165,19 @@
                 </div>
                 <div class="text-xl font-semibold">Admin - {{ content.title.content | default("EPA CAMPD") }}</div>
             </div>
-            <nav>
-                <a href="/" class="text-white hover:text-accent mr-4">Home</a>
-                {% if actor %}
+            {% if actor %}
+                <div>
+                    {% if actor.role == "admin" %}
+                        <a href="/register" class="text-white hover:text-accent mr-4">Register User</a>
+                    {% endif %}
+                    <a href="/change-password" class="text-white hover:text-accent mr-4">Change Password</a>
                     <a href="/logout" class="text-white hover:text-accent">Logout</a>
-                {% else %}
-                    <a href="/login" class="text-white hover:text-accent mr-4">Login</a>
-                    <a href="/register" class="text-white hover:text-accent">Register</a>
-                {% endif %}
-            </nav>
+                </div>
+            {% endif %}
         </div>
     </header>
     <main class="flex-grow pt-20 pb-6">
-        {% if actor and actor.id in ["admin", "admin1", "admin2"] %}
+        {% if actor and actor.role in ["admin", "moderator"] %}
             <section class="container mx-auto px-4 mt-4">
                 <div class="bg-card rounded-card p-6 border border-border">
                     <h2 class="text-2xl font-semibold text-primary mb-4">Site Title</h2>
@@ -201,6 +212,7 @@
                 </div>
                 <div class="container mx-auto px-4 mt-4">
                     <div id="display-header_image" class="display-section">
+                        <p class="text-text mb-4">Current Header Image: {{ content.header_image.image_url | default('/static/header.jpg') }}</p>
                         <button onclick="toggleEdit('header_image')" class="edit-button bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Edit Header Image</button>
                     </div>
                     <div id="edit-header_image" class="edit-section">
@@ -339,14 +351,10 @@
             <section class="container mx-auto px-4 mt-4">
                 <div class="bg-card rounded-card p-6 border border-border">
                     <h2 class="text-xl font-semibold text-primary mb-4">Admin Access Required</h2>
-                    <p class="text-text mb-4">You must be logged in as an admin to view this page.</p>
+                    <p class="text-text mb-4">You must be logged in as an admin or moderator to view this page.</p>
                     {% if actor %}
-                        <p class="text-text mb-4">You are logged in as <span class="font-semibold">{{ actor.name }}</span> but don't have admin privileges.</p>
+                        <p class="text-text mb-4">You are logged in as <span class="font-semibold">{{ actor.name }}</span> but don't have admin or moderator privileges.</p>
                     {% endif %}
-                    <div class="flex gap-4">
-                        <a href="/login" class="bg-accent text-white px-4 py-2 rounded hover:bg-accent-dark transition">Login</a>
-                        <a href="/" class="bg-gray-200 text-text px-4 py-2 rounded hover:bg-gray-300 transition">Return Home</a>
-                    </div>
                 </div>
             </section>
         {% endif %}
@@ -355,6 +363,9 @@
         <div class="container mx-auto px-4">
             <div id="display-footer" class="display-section flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center mb-4 md:mb-0">
+                    <div class="w-8 h-8 flex items-center justify-center mr-2">
+                        <i class="{{ content.footer.icon | default('ri-earth-line') }} text-primary ri-lg" aria-hidden="true"></i>
+                    </div>
                     <div class="text-primary">
                         {% for paragraph in content.footer.paragraphs | default([]) %}
                             <p class="mb-4">{{ paragraph | safe }}</p>
